@@ -226,7 +226,5 @@ Bạn có thể import file `Postman_Collection.json` để test API nhanh.
 
 ---
 
-## Giấy phép
 
-Dự án phục vụ mục đích học tập môn SOA. Có thể tùy chỉnh phần này theo nhu cầu (MIT, Apache-2.0, hoặc private).
 
