@@ -1,128 +1,232 @@
-## Đề tài: Hệ thống Quản lý Khách sạn dựa trên kiến trúc dịch vụ (SOA)
+## Hotel Management System (SOA)
 
-Frontend của dự án được xây dựng bằng **React** (Create React App), đóng vai trò là client trong hệ thống **quản lý khách sạn** theo kiến trúc **Service-Oriented Architecture (SOA)**. Ứng dụng giao tiếp với backend Node.js/Express qua **RESTful API**, hỗ trợ nhiều vai trò người dùng (receptionist, accountant, housekeeper, maintenance, manager) với giao diện dashboard riêng cho từng vai trò.
+Hệ thống quản lý khách sạn theo kiến trúc dịch vụ (SOA), gồm:
+- **Backend**: Node.js + Express + MongoDB, cung cấp REST API theo nghiệp vụ khách sạn.
+- **Frontend**: React, dashboard theo vai trò người dùng.
+- **Triển khai**: Docker Compose cho toàn bộ stack.
 
----
-
-## 1. Mục tiêu dự án
-
-- **Xây dựng giao diện web** cho hệ thống quản lý khách sạn, trực quan, dễ sử dụng.
-- **Hỗ trợ đầy đủ nghiệp vụ**: quản lý phòng, loại phòng, khách, đặt phòng, check-in/check-out, hóa đơn, thanh toán, bảo trì, báo cáo.
-- **Tích hợp phân quyền & xác thực** với backend qua **JWT**, bảo vệ các trang nội bộ bằng `ProtectedRoute`.
-- **Tổ chức mã nguồn rõ ràng**, dễ mở rộng: tách component, hooks, services, styles.
+Hệ thống hỗ trợ các vai trò: `manager`, `receptionist`, `accountant`, `housekeeper`, `maintenance`.
 
 ---
 
-## 2. Chức năng chính của frontend
+## Tính năng chính
 
-- **Xác thực & phân quyền**
-  - Màn hình đăng nhập (`Login`) nhận token và thông tin người dùng từ backend.
-  - Lưu trữ thông tin người dùng trong `localStorage`, tự động điều hướng theo `role`.
-  - `ProtectedRoute` kiểm tra quyền truy cập từng dashboard.
-
-- **Dashboard theo vai trò**
-  - **Receptionist**: quản lý đặt phòng, check-in/check-out, khách, phòng, hóa đơn, thanh toán.
-  - **Accountant**: theo dõi giao dịch, hóa đơn, lịch sử thanh toán.
-  - **Housekeeping**: xem trạng thái phòng (available/occupied/dirty/cleaning/maintenance).
-  - **Maintenance**: quản lý yêu cầu bảo trì, trạng thái phòng bảo trì.
-  - **Manager**: xem báo cáo tổng quan, doanh thu, tình trạng phòng, thống kê hoạt động.
-
-- **Quản lý & hiển thị dữ liệu**
-  - Sử dụng **services** trong `src/services` để gọi REST API (booking, room, guest, invoice, payment, report, v.v.).
-  - Dùng **custom hooks** (`useAuth`, `useBookings`, `useRooms`) để tách logic lấy dữ liệu và quản lý state.
-  - Sử dụng các component như `RoomCard`, `StatCard`, các bảng (table) để hiển thị dữ liệu.
-
-- **Giao diện & trải nghiệm người dùng**
-  - Dùng **CSS Modules** trong thư mục `styles` (ví dụ: `Dashboard.module.css`, `NavBar.module.css`, `Login.module.css`) để tạo UI hiện đại.
-  - Thanh điều hướng (`NavBar`) theo từng vai trò, hỗ trợ đăng xuất.
+- Xác thực bằng JWT, phân quyền theo vai trò.
+- Quản lý đặt phòng, phòng, loại phòng, khách hàng.
+- Nghiệp vụ check-in/check-out và thanh toán.
+- Quản lý hóa đơn, giao dịch, báo cáo doanh thu/công suất.
+- Quản lý yêu cầu bảo trì và trạng thái xử lý.
+- Dashboard riêng theo vai trò người dùng.
 
 ---
 
-## 3. Kiến trúc thư mục frontend
+## Công nghệ sử dụng
+
+### Backend
+- Node.js, Express
+- MongoDB, Mongoose
+- JWT, bcryptjs
+- express-validator
+- express-rate-limit
+
+### Frontend
+- React (Create React App)
+- react-router-dom
+- CSS Modules
+- recharts, lucide-react
+
+### DevOps
+- Docker, Docker Compose
+
+---
+
+## Cấu trúc thư mục
 
 ```text
-frontend/
-  ├─ public/            # File tĩnh, template HTML
-  ├─ src/
-  │  ├─ components/     # Component dùng chung & theo vai trò
-  │  │  ├─ receptionist/
-  │  │  ├─ accountant/
-  │  │  ├─ manager/
-  │  │  ├─ ...
-  │  ├─ pages/          # Các trang chính (Login, các Dashboard)
-  │  ├─ services/       # Gọi API đến backend (auth, booking, room, ...)
-  │  ├─ hooks/          # Custom hooks (useAuth, useBookings, useRooms)
-  │  ├─ styles/         # CSS Modules cho từng phần UI
-  │  ├─ App.js          # Định nghĩa route và ProtectedRoute
-  │  └─ index.js        # Entry point của ứng dụng
-  └─ package.json
+CK_SOA/
+├─ backend/
+│  ├─ config/                 # Kết nối DB
+│  ├─ controllers/            # Xử lý nghiệp vụ
+│  ├─ middleware/             # Auth, lỗi, rate limit, validate
+│  ├─ models/                 # Mongoose models
+│  ├─ routes/api/             # REST API routes
+│  ├─ scripts/seeders/        # Seed dữ liệu mẫu
+│  └─ server.js               # Entry point backend
+├─ frontend/
+│  ├─ src/components/         # UI components theo vai trò
+│  ├─ src/pages/              # Trang dashboard, login
+│  ├─ src/services/           # API service layer
+│  ├─ src/hooks/              # Custom hooks
+│  ├─ src/config/api.js       # API base URL
+│  └─ Dockerfile
+├─ mongo-init/rs-init.js      # Mongo init script cho Docker
+├─ docker-compose.yml
+└─ Postman_Collection.json
 ```
 
 ---
 
-## 4. Công nghệ sử dụng
+## Yêu cầu môi trường
 
-- **Ngôn ngữ & thư viện chính**
-  - React (Create React App)
-  - React Router DOM
-  - Axios (hoặc fetch) cho HTTP request (thông qua các service)
-
-- **Quản lý style**
-  - CSS Modules (`*.module.css`)
-  - File CSS global `src/styles/index.css`, `src/App.css`
-
-- **Bảo mật & phân quyền (phối hợp backend)**
-  - JWT (lưu token trong `localStorage`)
-  - `ProtectedRoute` cho các route cần đăng nhập
+- Node.js LTS (khuyến nghị 18+)
+- npm
+- MongoDB (nếu chạy local không dùng Docker)
+- Docker Desktop (nếu chạy bằng Docker)
 
 ---
 
-## 5. Cách chạy dự án
+## Cấu hình môi trường
 
-### 5.1. Chuẩn bị môi trường
+### 1) Backend `.env`
 
-- Cài đặt **Node.js** (phiên bản LTS khuyến nghị).
-- Đảm bảo backend đã được cài đặt và cấu hình (thư mục `backend` trong cùng project).
+Tạo file `backend/.env`:
 
-### 5.2. Cài đặt dependencies
+```env
+MONGODB_URL=mongodb://localhost:27017/hotel_management
+JWT_SECRET=your_strong_secret
+FRONTEND_URL=http://localhost:3000
+PORT=5000
+```
 
-Trong thư mục `frontend`:
+> Lưu ý bảo mật: không commit giá trị secret thật lên GitHub.
+
+### 2) Frontend `.env` (tùy chọn)
+
+Tạo file `frontend/.env` nếu muốn đổi API URL:
+
+```env
+REACT_APP_API_URL=http://localhost:5000/api
+```
+
+Nếu không có, hệ thống dùng mặc định giống trên.
+
+---
+
+## Chạy dự án (Local Development)
+
+### Bước 1: Cài dependencies
 
 ```bash
+cd backend
+npm install
+
+cd ../frontend
 npm install
 ```
 
-### 5.3. Chạy frontend ở môi trường development
+### Bước 2: Chạy backend
 
 ```bash
+cd backend
 npm start
 ```
 
-Ứng dụng sẽ chạy tại `http://localhost:3000`.
+Backend chạy tại: `http://localhost:5000`
 
-> Lưu ý: Cần chạy **backend** (mặc định `http://localhost:5000` hoặc theo cấu hình `FRONTEND_URL`/CORS) trước để các API hoạt động đầy đủ.
-
-### 5.4. Build cho môi trường production
+### Bước 3: Chạy frontend
 
 ```bash
-npm run build
+cd frontend
+npm start
 ```
 
-Thư mục `build` sẽ chứa mã frontend đã tối ưu để deploy.
+Frontend chạy tại: `http://localhost:3000`
 
 ---
 
-## 6. Ghi chú triển khai & mở rộng
+## Chạy bằng Docker Compose
 
-- Có thể cấu hình base URL của API trong `src/config/api.js` để phù hợp với môi trường (dev/staging/production).
-- Có thể bổ sung:
-  - Trang quản lý người dùng (users/roles) cho quản lý hệ thống.
-  - Biểu đồ trực quan hơn cho dashboard (sử dụng chart libraries).
-  - Đa ngôn ngữ (i18n) cho giao diện.
+Từ thư mục gốc project:
+
+```bash
+docker compose up -d --build
+```
+
+Sau khi chạy:
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:5000/api`
+- MongoDB: `mongodb://localhost:27017`
+
+Dừng hệ thống:
+
+```bash
+docker compose down
+```
 
 ---
 
-## 7. Tóm tắt (dùng cho báo cáo/CV)
+## Seed dữ liệu mẫu
 
-Frontend hiện thực **ứng dụng quản lý khách sạn** theo kiến trúc **SOA**, với **dashboard theo vai trò, bảo vệ route bằng JWT, tách service gọi API, sử dụng custom hooks và CSS Modules**. Cấu trúc mã nguồn rõ ràng, dễ mở rộng, hỗ trợ đầy đủ nghiệp vụ chính trong vận hành khách sạn và sẵn sàng tích hợp/triển khai trong môi trường thực tế.
+Trong `backend/`:
+
+```bash
+npm run seed:all
+```
+
+Hoặc seed riêng:
+
+```bash
+npm run seed:users
+npm run seed:room-types
+npm run seed:rooms
+```
+
+### Tài khoản test (sau khi seed users)
+- `manager@hotel.com`
+- `receptionist@hotel.com`
+- `accountant@hotel.com`
+- `housekeeper@hotel.com`
+- `maintenance@hotel.com`
+
+Mật khẩu mặc định: `123456`
+
+---
+
+## API chính
+
+Base URL: `/api`
+
+- `POST /auth/login`
+- `GET /auth/profile`
+- `POST /auth/logout`
+- `GET|POST /bookings`
+- `POST /checkin`, `POST /checkout`
+- `GET|POST /rooms`, `PUT /rooms/:roomId/status`
+- `GET|POST /guests`
+- `GET /invoices`, `GET /transactions`, `POST /payments`
+- `GET /reports/revenue`, `GET /reports/occupancy`
+- `GET /dashboard/revenue`
+- `POST /maintenance/issues`, `GET /maintenance/requests`
+
+Bạn có thể import file `Postman_Collection.json` để test API nhanh.
+
+---
+
+## Scripts hữu ích
+
+### Backend
+- `npm start`: chạy server
+- `npm run seed:all`: seed toàn bộ
+- `npm run check-role`: kiểm tra role user
+- `npm run fix-accountant`: sửa role accountant nếu sai
+
+### Frontend
+- `npm start`: chạy dev server
+- `npm run build`: build production
+- `npm test`: chạy test
+
+---
+
+## Định hướng mở rộng
+
+- Bổ sung tài liệu API tự động (Swagger/OpenAPI đầy đủ).
+- Thêm test tích hợp cho backend và test UI cho frontend.
+- Tách thêm service theo bounded context để tiến tới microservices hoàn chỉnh.
+- Bổ sung CI/CD (lint, test, build, deploy tự động).
+
+---
+
+## Giấy phép
+
+Dự án phục vụ mục đích học tập môn SOA. Có thể tùy chỉnh phần này theo nhu cầu (MIT, Apache-2.0, hoặc private).
 
