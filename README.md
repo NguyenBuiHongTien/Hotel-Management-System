@@ -1,11 +1,29 @@
-## Hotel Management System (SOA)
+<h1 align="center">Hotel Management System (SOA)</h1>
 
-Hệ thống quản lý khách sạn theo kiến trúc dịch vụ (SOA), gồm:
-- **Backend**: Node.js + Express + MongoDB, cung cấp REST API theo nghiệp vụ khách sạn.
-- **Frontend**: React, dashboard theo vai trò người dùng.
-- **Triển khai**: Docker Compose cho toàn bộ stack.
+<p align="center">
+  Hệ thống quản lý khách sạn theo kiến trúc dịch vụ (SOA) với dashboard theo vai trò,<br/>
+  REST API bảo mật JWT và triển khai toàn stack bằng Docker Compose.
+</p>
 
-Hệ thống hỗ trợ các vai trò: `manager`, `receptionist`, `accountant`, `housekeeper`, `maintenance`.
+<p align="center">
+  <img alt="Node.js" src="https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white">
+  <img alt="Express" src="https://img.shields.io/badge/Express-5.x-000000?logo=express&logoColor=white">
+  <img alt="React" src="https://img.shields.io/badge/React-19.x-61DAFB?logo=react&logoColor=000">
+  <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-7.x-47A248?logo=mongodb&logoColor=white">
+  <img alt="Docker" src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white">
+  <img alt="License" src="https://img.shields.io/badge/License-Educational-blue">
+</p>
+
+---
+
+## Tổng quan
+
+Hệ thống gồm:
+- **Backend**: Node.js + Express + MongoDB, cung cấp REST API cho nghiệp vụ khách sạn.
+- **Frontend**: React, giao diện dashboard riêng theo vai trò người dùng.
+- **Triển khai**: Docker Compose để chạy đồng bộ MongoDB + Backend + Frontend.
+
+Vai trò hỗ trợ: `manager`, `receptionist`, `accountant`, `housekeeper`, `maintenance`.
 
 ---
 
@@ -17,6 +35,30 @@ Hệ thống hỗ trợ các vai trò: `manager`, `receptionist`, `accountant`, 
 - Quản lý hóa đơn, giao dịch, báo cáo doanh thu/công suất.
 - Quản lý yêu cầu bảo trì và trạng thái xử lý.
 - Dashboard riêng theo vai trò người dùng.
+
+---
+
+## Demo giao diện
+
+> Cập nhật ảnh/GIF thật của bạn vào thư mục `docs/images` rồi thay link bên dưới.
+
+### Screenshots
+
+- Đăng nhập: `docs/images/login.png`
+- Dashboard quản lý: `docs/images/manager-dashboard.png`
+- Dashboard lễ tân: `docs/images/receptionist-dashboard.png`
+- Dashboard kế toán: `docs/images/accountant-dashboard.png`
+
+### Demo GIF (tùy chọn)
+
+- Luồng đặt phòng -> check-in -> checkout -> thanh toán: `docs/images/demo-flow.gif`
+
+Mẫu markdown để hiển thị ảnh:
+
+```md
+![Login](docs/images/login.png)
+![Manager Dashboard](docs/images/manager-dashboard.png)
+```
 
 ---
 
@@ -63,6 +105,30 @@ CK_SOA/
 ├─ docker-compose.yml
 └─ Postman_Collection.json
 ```
+
+---
+
+## Kiến trúc hệ thống (SOA)
+
+```text
+[ React Frontend ]
+        |
+        | HTTP/JSON + JWT
+        v
+[ Express API Layer ]
+  | Auth Service
+  | Booking Service
+  | Room Service
+  | Invoice/Payment Service
+  | Report Service
+  v
+[ MongoDB ]
+```
+
+Luồng chính:
+- Frontend gọi API qua `frontend/src/services/*`.
+- Backend xử lý theo route/controller, xác thực qua middleware JWT.
+- Dữ liệu lưu tại MongoDB qua Mongoose models.
 
 ---
 
@@ -217,14 +283,51 @@ Bạn có thể import file `Postman_Collection.json` để test API nhanh.
 
 ---
 
-## Định hướng mở rộng
+## Roadmap
 
-- Bổ sung tài liệu API tự động (Swagger/OpenAPI đầy đủ).
-- Thêm test tích hợp cho backend và test UI cho frontend.
-- Tách thêm service theo bounded context để tiến tới microservices hoàn chỉnh.
-- Bổ sung CI/CD (lint, test, build, deploy tự động).
+- [ ] Bổ sung tài liệu API đầy đủ (Swagger/OpenAPI public).
+- [ ] Thêm test tích hợp backend và test UI frontend.
+- [ ] Hoàn thiện phân lớp service theo bounded context rõ hơn.
+- [ ] Thiết lập CI/CD (lint, test, build, deploy).
+- [ ] Thêm phân quyền chi tiết hơn theo action-level.
 
 ---
 
+## Contributing
 
+Đóng góp được chào đón:
+
+1. Fork repository.
+2. Tạo branch mới: `feature/ten-tinh-nang`.
+3. Commit rõ ràng, ngắn gọn.
+4. Mở Pull Request mô tả thay đổi + cách test.
+
+Quy ước gợi ý:
+- Tách commit theo mục tiêu nhỏ.
+- Không commit secrets (`.env`, token, key).
+- Cập nhật README/API docs khi thay đổi endpoint.
+
+---
+
+## Portfolio Gợi ý
+
+Nếu dùng cho CV/portfolio, nên thêm:
+- Link video demo (YouTube/Drive).
+- Sơ đồ use case hoặc ERD.
+- Số liệu định lượng: số API, số vai trò, luồng nghiệp vụ chính.
+- Vai trò cá nhân của bạn trong team (backend/frontend/devops).
+
+---
+
+## Giấy phép / License
+
+Dự án phục vụ mục đích học tập môn SOA. Có thể tùy chỉnh phần này theo nhu cầu (MIT, Apache-2.0, hoặc private).
+
+---
+
+## Liên hệ
+
+- Tác giả: `<YOUR_NAME>`
+- Email: `<YOUR_EMAIL>`
+- GitHub: `<YOUR_GITHUB_PROFILE_URL>`
 
