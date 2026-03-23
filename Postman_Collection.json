@@ -1,0 +1,1103 @@
+{
+  "info": {
+    "name": "Hotel Management API",
+    "description": "Complete API collection for Hotel Management System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.environment.set(\"token\", jsonData.token);",
+                  "    pm.collectionVariables.set(\"token\", jsonData.token);",
+                  "    console.log(\"Token saved:\", jsonData.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"manager@hotel.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"guestInfo\": {\n    \"fullName\": \"Nguyen Van A\",\n    \"phoneNumber\": \"0901234567\",\n    \"email\": \"guest@example.com\"\n  },\n  \"roomId\": \"ROOM_ID_HERE\",\n  \"checkInDate\": \"2025-12-01\",\n  \"checkOutDate\": \"2025-12-05\",\n  \"numberOfGuests\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings"]
+            }
+          }
+        },
+        {
+          "name": "Get All Bookings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings?status=confirmed",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "confirmed"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Booking by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/:bookingId",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", ":bookingId"],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "BOOKING_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Booking",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"numberOfGuests\": 3,\n  \"status\": \"confirmed\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bookings/:bookingId",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", ":bookingId"],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "BOOKING_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/:bookingId/cancel",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", ":bookingId", "cancel"],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "BOOKING_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Generate Invoice",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/bookings/:bookingId/invoice",
+              "host": ["{{baseUrl}}"],
+              "path": ["bookings", ":bookingId", "invoice"],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "BOOKING_ID_HERE"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rooms",
+      "item": [
+        {
+          "name": "Get All Rooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rooms?status=available",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "available"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Room by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rooms/:roomId",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", ":roomId"],
+              "variable": [
+                {
+                  "key": "roomId",
+                  "value": "ROOM_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Room",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomNumber\": \"201\",\n  \"roomTypeId\": \"ROOM_TYPE_ID_HERE\",\n  \"floor\": \"2\",\n  \"status\": \"available\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rooms",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms"]
+            }
+          }
+        },
+        {
+          "name": "Update Room Info",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomNumber\": \"201\",\n  \"roomTypeId\": \"ROOM_TYPE_ID_HERE\",\n  \"floor\": \"2\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rooms/:roomId",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", ":roomId"],
+              "variable": [
+                {
+                  "key": "roomId",
+                  "value": "ROOM_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Room Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"dirty\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/rooms/:roomId/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", ":roomId", "status"],
+              "variable": [
+                {
+                  "key": "roomId",
+                  "value": "ROOM_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Search Available Rooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rooms/available?checkInDate=2025-12-01&checkOutDate=2025-12-05",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", "available"],
+              "query": [
+                {
+                  "key": "checkInDate",
+                  "value": "2025-12-01"
+                },
+                {
+                  "key": "checkOutDate",
+                  "value": "2025-12-05"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Cleaning Rooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rooms/cleaning",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", "cleaning"]
+            }
+          }
+        },
+        {
+          "name": "Get Maintenance Rooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rooms/maintenance",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", "maintenance"]
+            }
+          }
+        },
+        {
+          "name": "Get Realtime Room Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/rooms/status/realtime",
+              "host": ["{{baseUrl}}"],
+              "path": ["rooms", "status", "realtime"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Guests",
+      "item": [
+        {
+          "name": "Get All Guests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/guests?name=Nguyen",
+              "host": ["{{baseUrl}}"],
+              "path": ["guests"],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "Nguyen"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Guest by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/guests/:guestId",
+              "host": ["{{baseUrl}}"],
+              "path": ["guests", ":guestId"],
+              "variable": [
+                {
+                  "key": "guestId",
+                  "value": "GUEST_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Guest",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Nguyen Van A\",\n  \"phoneNumber\": \"0901234567\",\n  \"email\": \"guest@example.com\",\n  \"address\": \"123 Main St\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/guests",
+              "host": ["{{baseUrl}}"],
+              "path": ["guests"]
+            }
+          }
+        },
+        {
+          "name": "Update Guest",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Nguyen Van A Updated\",\n  \"phoneNumber\": \"0901234567\",\n  \"email\": \"newemail@example.com\",\n  \"address\": \"456 New St\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/guests/:guestId",
+              "host": ["{{baseUrl}}"],
+              "path": ["guests", ":guestId"],
+              "variable": [
+                {
+                  "key": "guestId",
+                  "value": "GUEST_ID_HERE"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Check-in/Check-out",
+      "item": [
+        {
+          "name": "Check-in",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"BOOKING_ID_HERE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/checkin",
+              "host": ["{{baseUrl}}"],
+              "path": ["checkin"]
+            }
+          }
+        },
+        {
+          "name": "Check-out",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"BOOKING_ID_HERE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/checkout",
+              "host": ["{{baseUrl}}"],
+              "path": ["checkout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Record Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoiceId\": \"INVOICE_ID_HERE\",\n  \"paymentMethod\": \"cash\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"]
+            }
+          }
+        },
+        {
+          "name": "Get Transaction History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/transactions?fromDate=2025-12-01&toDate=2025-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["transactions"],
+              "query": [
+                {
+                  "key": "fromDate",
+                  "value": "2025-12-01"
+                },
+                {
+                  "key": "toDate",
+                  "value": "2025-12-31"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Invoices",
+      "item": [
+        {
+          "name": "Get All Invoices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices?status=pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoices"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Invoice by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices/:invoiceId",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoices", ":invoiceId"],
+              "variable": [
+                {
+                  "key": "invoiceId",
+                  "value": "INVOICE_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Guest Invoice View",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices/guest/:bookingId",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoices", "guest", ":bookingId"],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "BOOKING_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Financial Invoice View",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/invoices/financial/:bookingId",
+              "host": ["{{baseUrl}}"],
+              "path": ["invoices", "financial", ":bookingId"],
+              "variable": [
+                {
+                  "key": "bookingId",
+                  "value": "BOOKING_ID_HERE"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Maintenance",
+      "item": [
+        {
+          "name": "Report Maintenance Issue",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"ROOM_ID_HERE\",\n  \"description\": \"Điều hòa không hoạt động\",\n  \"priority\": \"high\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/maintenance/issues",
+              "host": ["{{baseUrl}}"],
+              "path": ["maintenance", "issues"]
+            }
+          }
+        },
+        {
+          "name": "Get All Maintenance Requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/maintenance/requests?status=reported",
+              "host": ["{{baseUrl}}"],
+              "path": ["maintenance", "requests"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "reported"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Maintenance Request by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/maintenance/requests/:requestId",
+              "host": ["{{baseUrl}}"],
+              "path": ["maintenance", "requests", ":requestId"],
+              "variable": [
+                {
+                  "key": "requestId",
+                  "value": "REQUEST_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Maintenance Request",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in_progress\",\n  \"assignedTo\": \"USER_ID_HERE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/maintenance/:requestId",
+              "host": ["{{baseUrl}}"],
+              "path": ["maintenance", ":requestId"],
+              "variable": [
+                {
+                  "key": "requestId",
+                  "value": "REQUEST_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Complete Maintenance Task",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/maintenance/:requestId/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["maintenance", ":requestId", "complete"],
+              "variable": [
+                {
+                  "key": "requestId",
+                  "value": "REQUEST_ID_HERE"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Generate Occupancy Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reports/occupancy?fromDate=2025-12-01&toDate=2025-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "occupancy"],
+              "query": [
+                {
+                  "key": "fromDate",
+                  "value": "2025-12-01",
+                  "description": "Required"
+                },
+                {
+                  "key": "toDate",
+                  "value": "2025-12-31",
+                  "description": "Required"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Generate Revenue Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reports/revenue?fromDate=2025-12-01&toDate=2025-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "revenue"],
+              "query": [
+                {
+                  "key": "fromDate",
+                  "value": "2025-12-01",
+                  "description": "Required"
+                },
+                {
+                  "key": "toDate",
+                  "value": "2025-12-31",
+                  "description": "Required"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Generated Reports",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reports?type=revenue",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "revenue"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Generated Report by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reports/:reportId",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", ":reportId"],
+              "variable": [
+                {
+                  "key": "reportId",
+                  "value": "REPORT_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Export Comprehensive Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/reports/comprehensive/export",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", "comprehensive", "export"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Room Types",
+      "item": [
+        {
+          "name": "Get All Room Types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/room-types",
+              "host": ["{{baseUrl}}"],
+              "path": ["room-types"]
+            }
+          }
+        },
+        {
+          "name": "Get Room Type by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/room-types/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["room-types", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "ROOM_TYPE_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Room Type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"typeName\": \"Suite\",\n  \"description\": \"Phòng suite cao cấp\",\n  \"basePrice\": 1000000,\n  \"capacity\": 4,\n  \"amenities\": [\"wifi\", \"tv\", \"ac\", \"bathtub\", \"minibar\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/room-types",
+              "host": ["{{baseUrl}}"],
+              "path": ["room-types"]
+            }
+          }
+        },
+        {
+          "name": "Update Room Type",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"typeName\": \"Suite Premium\",\n  \"basePrice\": 1200000,\n  \"capacity\": 4,\n  \"amenities\": [\"wifi\", \"tv\", \"ac\", \"bathtub\", \"minibar\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/room-types/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["room-types", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "ROOM_TYPE_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Room Type",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/room-types/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["room-types", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "ROOM_TYPE_ID_HERE"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Employees",
+      "item": [
+        {
+          "name": "Get All Employees",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/employees?role=receptionist",
+              "host": ["{{baseUrl}}"],
+              "path": ["employees"],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "receptionist"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Employee",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Employee\",\n  \"email\": \"newemployee@hotel.com\",\n  \"password\": \"123456\",\n  \"role\": \"receptionist\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/employees",
+              "host": ["{{baseUrl}}"],
+              "path": ["employees"]
+            }
+          }
+        },
+        {
+          "name": "Get Employee by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/employees/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["employees", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "EMPLOYEE_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Employee",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"email\": \"updated@hotel.com\",\n  \"role\": \"accountant\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/employees/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["employees", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "EMPLOYEE_ID_HERE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Employee",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/employees/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["employees", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "EMPLOYEE_ID_HERE"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get Revenue Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/dashboard/revenue?fromDate=2025-12-01&toDate=2025-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["dashboard", "revenue"],
+              "query": [
+                {
+                  "key": "fromDate",
+                  "value": "2025-12-01"
+                },
+                {
+                  "key": "toDate",
+                  "value": "2025-12-31"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+

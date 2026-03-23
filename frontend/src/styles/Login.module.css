@@ -1,0 +1,219 @@
+/* ===== CONTAINER & CARD ===== */
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #eef2ff 0%, #c7d2fe 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+.card {
+  background: white;
+  border-radius: 1.25rem;
+  box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.15);
+  width: 100%;
+  max-width: 28rem;
+  padding: 2.5rem 2rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* ===== HEADER ===== */
+.header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.logo {
+  width: 4.5rem;
+  height: 4.5rem;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+  color: white;
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+  transition: transform 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.05);
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+}
+
+.subtitle {
+  color: #64748b;
+  font-size: 1rem;
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+/* ===== FORM ===== */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem; /* Tăng khoảng cách giữa các field */
+}
+
+/* ===== FIELD: Label + Input ===== */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem; /* Tăng khoảng cách giữa label và input */
+}
+
+/* ===== LABEL ===== */
+.label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4c1d95; /* Tím đậm */
+  letter-spacing: 0.025em;
+  margin-left: 0.25rem; /* Đẩy label ra khỏi viền input */
+}
+
+/* ===== INPUT WRAPPER ===== */
+.inputWrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* ===== INPUT CHÍNH ===== */
+.input {
+  width: 100%;
+  padding: 0.875rem 1rem 0.875rem 2.75rem; /* Chừa chỗ icon */
+  border: 2px solid #c4b5fd; /* Viền tím nhạt */
+  border-radius: 0.75rem;
+  background-color: white;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #6d28d9; /* Chữ tím đậm */
+  transition: all 0.3s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.input::placeholder {
+  color: #a78bfa; /* Placeholder tím nhạt */
+  font-weight: 500;
+  opacity: 1;
+}
+
+.input:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+  background-color: white;
+}
+
+/* ===== ICON TRÁI (User / Lock) ===== */
+.icon {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #a78bfa;
+  width: 1.25rem;
+  height: 1.25rem;
+  pointer-events: none;
+  z-index: 10; /* Luôn hiển thị trên input */
+}
+
+/* ===== EYE BUTTON ===== */
+.eyeButton {
+  position: absolute;
+  right: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #a78bfa;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.eyeButton:hover {
+  color: #7c3aed;
+  background-color: rgba(124, 58, 237, 0.1);
+  border-radius: 0.375rem;
+}
+
+/* ===== SUBMIT BUTTON ===== */
+.button {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  padding: 0.875rem;
+  border-radius: 0.75rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+  margin-top: 0.5rem;
+}
+
+.button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(79, 70, 229, 0.4);
+}
+
+.button:active {
+  transform: translateY(0);
+}
+
+/* ===== ERROR ===== */
+.error {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  border: 1px solid #fca5a5;
+  color: #dc2626;
+  padding: 0.875rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(220, 38, 38, 0.1);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 480px) {
+  .card {
+    padding: 2rem 1.5rem;
+    border-radius: 1rem;
+  }
+  
+  .title {
+    font-size: 1.75rem;
+  }
+  
+  .input {
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    font-size: 0.95rem;
+  }
+  
+  .form {
+    gap: 1.75rem;
+  }
+  
+  .field {
+    gap: 0.6rem;
+  }
+}

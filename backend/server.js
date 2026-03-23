@@ -1,0 +1,72 @@
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const connectDB = require('./config/db.js');
+const { notFound, errorHandler } = require('./middleware/errorMiddleware');
+
+// Import 9 routes cũ
+const authRoutes = require('./routes/api/authRoutes');
+const employeeRoutes = require('./routes/api/employeeRoutes');
+const bookingRoutes = require('./routes/api/bookingRoutes');
+const roomRoutes = require('./routes/api/roomRoutes'); 
+const roomTypeRoutes = require('./routes/api/roomTypeRoutes');
+const guestRoutes = require('./routes/api/guestRoutes');
+const invoiceRoutes = require('./routes/api/invoiceRoutes');
+const maintenanceRoutes = require('./routes/api/maintenanceRoutes');
+const reportRoutes = require('./routes/api/reportRoutes');
+
+// --- BỔ SUNG 3 ROUTES MỚI ---
+const checkinRoutes = require('./routes/api/checkinRoutes');
+const paymentRoutes = require('./routes/api/paymentRoutes');
+const dashboardRoutes = require('./routes/api/dashboardRoutes');
+
+dotenv.config();
+connectDB();
+
+const app = express();
+
+// CORS configuration
+if (!process.env.FRONTEND_URL) {
+  console.error('❌ FRONTEND_URL không được cấu hình trong .env');
+  process.exit(1);
+}
+
+app.use(cors({
+  origin: process.env.FRONTEND_URL, // ← Bỏ fallback
+  credentials: true
+}));
+
+app.use(express.json());
+
+const { apiLimiter } = require('./middleware/rateLimiters');
+
+// Áp dụng rate limiting cho tất cả API
+app.use('/api/', apiLimiter);
+
+// --- Định nghĩa các API Routes ---
+
+// 1. Các routes có tiền tố (prefix) rõ ràng
+app.use('/api/auth', authRoutes);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/rooms', roomRoutes); 
+app.use('/api/room-types', roomTypeRoutes);
+app.use('/api/guests', guestRoutes);
+app.use('/api/invoices', invoiceRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/dashboard', dashboardRoutes); // -> /api/dashboard/revenue
+
+// 2. Các routes MỚI không có tiền tố (gắn thẳng vào /api)
+// (Vì các route này đã tự định nghĩa đường dẫn đầy đủ)
+app.use('/api', checkinRoutes); // -> /api/checkin, /api/checkout
+app.use('/api', paymentRoutes); // -> /api/payments, /api/transactions
+
+// ------------------------------------
+
+// Sử dụng Middleware xử lý lỗi (Phải đặt ở CUỐI CÙNG)
+app.use(notFound);
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

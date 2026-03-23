@@ -1,0 +1,64 @@
+# ============================================
+# Docker Compose - Hệ thống Quản lý Khách sạn
+# Chạy: docker-compose up -d
+# ============================================
+version: "3.8"
+
+services:
+  # ---------- MongoDB ----------
+  mongodb:
+    image: mongo:7
+    container_name: hotel_mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init/rs-init.js:/docker-entrypoint-initdb.d/rs-init.js
+    environment:
+      MONGO_INITDB_DATABASE: hotel_management
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+
+  # ---------- Backend (Node.js + Express) ----------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hotel_backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      # Kết nối MongoDB qua tên service
+      MONGODB_URL: mongodb://mongodb:27017/hotel_management
+      # CORS: cho phép frontend (trình duyệt gọi API)
+      FRONTEND_URL: http://localhost:3000
+      JWT_SECRET: ${JWT_SECRET:-jwt-secret-doi-trong-env-file}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  # ---------- Frontend (React build + Nginx) ----------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # URL API khi user mở từ trình duyệt (localhost:5000)
+        REACT_APP_API_URL: http://localhost:5000/api
+    container_name: hotel_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  mongodb_data:

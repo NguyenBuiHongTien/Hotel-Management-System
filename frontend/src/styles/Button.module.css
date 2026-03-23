@@ -1,0 +1,62 @@
+/* ===== NÚT CHÍNH (Primary) – ĐẶT PHÒNG MỚI ===== */
+.primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.75rem; /* Tăng padding */
+  font-size: 1.125rem;       /* Tăng font */
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border: none;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  white-space: nowrap;
+  min-height: 3.5rem; /* Đảm bảo chiều cao */
+}
+
+.primary:hover {
+  background: linear-gradient(135deg, #4338ca, #6d28d9);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
+}
+
+.primary:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+.primary svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+}
+
+/* ===== NÚT NHỎ (nếu cần) ===== */
+.sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  min-height: auto;
+}
+
+.sm svg {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 640px) {
+  .primary {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    gap: 0.5rem;
+  }
+
+  .primary svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}

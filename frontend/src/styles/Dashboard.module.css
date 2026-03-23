@@ -1,0 +1,529 @@
+/* ===== FONT & ROOT ===== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --color-primary: #4f46e5;
+  --color-primary-light: #7c3aed;
+  --color-bg: #f8fafc;
+  --color-bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
+  --color-text: #1e293b;
+  --color-text-light: #64748b;
+  --color-border: #e2e8f0;
+  --color-card: #ffffff;
+  --radius-lg: 1rem;
+  --radius-md: 0.75rem;
+  --radius-sm: 0.5rem;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.1);
+  --transition: all 0.2s ease;
+}
+
+/* ===== CONTAINER ===== */
+.container {
+  min-height: 100vh;
+  background: var(--color-bg-gradient);
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  color: var(--color-text);
+}
+
+.content {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* ===== TAB NAVIGATION ===== */
+.tabNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabNav::-webkit-scrollbar {
+  display: none;
+}
+
+/* Tab Button */
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--color-text-light);
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+  min-width: fit-content;
+}
+
+.tab:hover {
+  color: var(--color-primary);
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.1);
+}
+
+.tabActive,
+.tabActive:hover {
+  color: white;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+/* Icon & Label */
+.tabIcon {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.tabLabel {
+  font-weight: 600;
+}
+
+/* ===== TAB CONTENT ===== */
+.tabContent {
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-border);
+}
+
+/* ===== SECTION TITLE ===== */
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+  padding-bottom: 0.75rem;
+}
+
+.sectionTitle::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 64px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  border-radius: 2px;
+}
+
+.sectionTitle svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--color-primary);
+}
+
+/* ===== GRID ===== */
+.grid {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.gridRooms {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  align-items: stretch;
+}
+
+.gridCheckInOut {
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+/* ===== ROOMS TAB – CARD PHÒNG ===== */
+.gridRooms {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  align-items: stretch;
+  padding: 1rem;
+}
+
+/* Card phòng */
+.gridItem {
+  background: var(--color-card, #fff);
+  border-radius: var(--radius-lg, 12px);
+  border: 1px solid var(--color-border, #e5e7eb);
+  box-shadow: var(--shadow-md, 0 2px 8px rgba(0,0,0,0.05));
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+}
+
+.gridItem:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lg, 0 4px 16px rgba(0,0,0,0.1));
+  border-color: #c7d2fe;
+}
+
+/* Icon giường nhỏ góc trên phải */
+.gridItem::after {
+  content: "bed";
+  position: absolute;
+  top: 0.75rem;
+  right: 1rem;
+  font-family: "Material Icons", sans-serif;
+  font-size: 1.6rem;
+  color: #000000;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Tiêu đề phòng */
+.gridItemTitle {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--color-text, #111827);
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* Mô tả tầng + loại phòng */
+.gridItemSubtitle {
+  font-size: 0.95rem;
+  color: var(--color-text-light, #6b7280);
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Trạng thái – nổi bật, bo tròn, căn phải */
+.gridItemStatus {
+  align-self: flex-end; /* đẩy sang phải */
+  padding: 0.5rem 1rem;
+  border-radius: 9999px; 
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 100px;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+/* Màu trạng thái */
+.statusAvailable {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1.5px solid #a7f3d0;
+}
+
+.statusOccupied {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1.5px solid #fca5a5;
+}
+
+.statusMaintenance {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1.5px solid #fcd34d;
+}
+
+/* Icon nhỏ trong trạng thái */
+.statusAvailable::before   { content: "check_circle"; }
+.statusOccupied::before    { content: "highlight_off"; } /* sửa tên icon từ cancel -> highlight_off */
+.statusMaintenance::before { content: "build"; }
+
+.statusAvailable::before,
+.statusOccupied::before,
+.statusMaintenance::before {
+  font-family: "Material Icons";
+  font-size: 1rem;
+  margin-right: 0.3rem; /* khoảng cách giữa icon và text */
+}
+
+/* Giá tiền – giữ căn phải */
+.gridItemPrice {
+  margin-top: auto; 
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-primary, #3b82f6);
+  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+.gridItemPrice small {
+  font-size: 0.8rem;
+  color: var(--color-text-light, #6b7280);
+  font-weight: 500;
+}
+
+/* Responsive nhỏ hơn */
+@media (max-width: 500px) {
+  .gridRooms {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+}
+
+
+/* ===== BOOKING TABLE CARD ===== */
+.bookingTableCard {
+  padding: 1.5rem;
+  overflow: hidden;
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+  transition: var(--transition);
+}
+
+.bookingTableCard:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: #c7d2fe;
+}
+
+.bookingTableCard .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 1rem;
+}
+
+.bookingTableCard table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.bookingTableCard th,
+.bookingTableCard td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.9375rem;
+}
+
+.bookingTableCard th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bookingTableCard tr:hover {
+  background: #f9fafb;
+}
+
+.bookingTableCard .actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.bookingTableCard .editBtn,
+.bookingTableCard .deleteBtn {
+  padding: 0.5rem;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.bookingTableCard .editBtn { color: var(--color-primary); }
+.bookingTableCard .editBtn:hover { background: #eef2ff; color: #4338ca; }
+.bookingTableCard .deleteBtn { color: #dc2626; }
+.bookingTableCard .deleteBtn:hover { background: #fee2e2; color: #991b1b; }
+
+/* ===== CHECKIN/CHECKOUT CARD ===== */
+.checkinoutCard {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+  transition: var(--transition);
+}
+
+.checkinoutCard:hover {
+  box-shadow: var(--shadow-lg);
+  border-color: #c7d2fe;
+}
+
+.checkinoutHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: var(--color-text);
+}
+
+.checkinoutHeader svg {
+  width: 24px;
+  height: 24px;
+}
+
+.checkinList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  flex-grow: 1;
+}
+
+.checkinItem {
+  border-left: 4px solid;
+  padding-left: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.checkinItem.checkin { border-color: #22c55e; }
+.checkinItem.checkout { border-color: #ef4444; }
+
+.checkinItem strong {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.checkinItem p {
+  margin: 0.25rem 0;
+  font-size: 0.875rem;
+  color: var(--color-text-light);
+}
+
+.checkinItem button {
+  align-self: flex-start;
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+/* ===== MODAL ===== */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: var(--shadow-lg);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .content { padding: 1.5rem 0.75rem; }
+  .tabNav { gap: 0.5rem; padding: 0.5rem 0; }
+  .tab { padding: 0.625rem 1rem; font-size: 0.875rem; }
+  .tabLabel { display: none; }
+  .tabIcon { width: 1.25rem; height: 1.25rem; }
+  .tabContent, .directContent { padding: 1.25rem; border-radius: var(--radius-md); }
+  .gridRooms { grid-template-columns: 1fr; gap: 1rem; }
+  .sectionTitle { font-size: 1.35rem; margin-bottom: 1.25rem; }
+  .sectionTitle::after { width: 48px; }
+  .gridCheckInOut { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .gridRooms { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 1025px) {
+  .gridRooms { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (min-width: 768px) {
+  .gridCheckInOut { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 480px) {
+  .tab { padding: 0.5rem; border-radius: var(--radius-sm); }
+}
+
+/* ===== NỘI DUNG KHÔNG CÓ TAB CONTENT (dùng cho RoomsTab, BookingsTab, CheckInOutTab) ===== */
+.directContent {
+  padding: 1.5rem;
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--color-border);
+}
+
+.tabs {
+  display: flex;
+  gap: 2rem;
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  cursor: pointer;
+  padding-bottom: 0.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #6b7280;  /* màu xám nhạt */
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.tab:hover {
+  color: #7c3aed; /* tím đậm khi hover */
+}
+
+.tabActive {
+  color: #f2f1f4; /* màu tím */
+  border-bottom-color: #7c3aed;
+}
+
+.addEmployeeButton {
+  margin-left: auto;
+  background-color: #7c3aed; /* purple-600 */
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.addEmployeeButton:hover {
+  background-color: #6d28d9; /* tím đậm hơn */
+}
