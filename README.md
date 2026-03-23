@@ -38,30 +38,6 @@ Vai trò hỗ trợ: `manager`, `receptionist`, `accountant`, `housekeeper`, `ma
 
 ---
 
-## Demo giao diện
-
-> Cập nhật ảnh/GIF thật của bạn vào thư mục `docs/images` rồi thay link bên dưới.
-
-### Screenshots
-
-- Đăng nhập: `docs/images/login.png`
-- Dashboard quản lý: `docs/images/manager-dashboard.png`
-- Dashboard lễ tân: `docs/images/receptionist-dashboard.png`
-- Dashboard kế toán: `docs/images/accountant-dashboard.png`
-
-### Demo GIF (tùy chọn)
-
-- Luồng đặt phòng -> check-in -> checkout -> thanh toán: `docs/images/demo-flow.gif`
-
-Mẫu markdown để hiển thị ảnh:
-
-```md
-![Login](docs/images/login.png)
-![Manager Dashboard](docs/images/manager-dashboard.png)
-```
-
----
-
 ## Công nghệ sử dụng
 
 ### Backend
@@ -290,44 +266,6 @@ Bạn có thể import file `Postman_Collection.json` để test API nhanh.
 - [ ] Hoàn thiện phân lớp service theo bounded context rõ hơn.
 - [ ] Thiết lập CI/CD (lint, test, build, deploy).
 - [ ] Thêm phân quyền chi tiết hơn theo action-level.
+- [ ] Bổ sung ảnh demo.
 
----
-
-## Contributing
-
-Đóng góp được chào đón:
-
-1. Fork repository.
-2. Tạo branch mới: `feature/ten-tinh-nang`.
-3. Commit rõ ràng, ngắn gọn.
-4. Mở Pull Request mô tả thay đổi + cách test.
-
-Quy ước gợi ý:
-- Tách commit theo mục tiêu nhỏ.
-- Không commit secrets (`.env`, token, key).
-- Cập nhật README/API docs khi thay đổi endpoint.
-
----
-
-## Portfolio Gợi ý
-
-Nếu dùng cho CV/portfolio, nên thêm:
-- Link video demo (YouTube/Drive).
-- Sơ đồ use case hoặc ERD.
-- Số liệu định lượng: số API, số vai trò, luồng nghiệp vụ chính.
-- Vai trò cá nhân của bạn trong team (backend/frontend/devops).
-
----
-
-## Giấy phép / License
-
-Dự án phục vụ mục đích học tập môn SOA. Có thể tùy chỉnh phần này theo nhu cầu (MIT, Apache-2.0, hoặc private).
-
----
-
-## Liên hệ
-
-- Tác giả: `<YOUR_NAME>`
-- Email: `<YOUR_EMAIL>`
-- GitHub: `<YOUR_GITHUB_PROFILE_URL>`
 
