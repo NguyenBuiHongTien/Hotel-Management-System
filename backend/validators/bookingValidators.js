@@ -9,8 +9,12 @@ const createBookingRules = [
     .notEmpty().withMessage('Ngày check-in là bắt buộc')
     .isISO8601().withMessage('Ngày check-in không đúng format')
     .custom((value) => {
-      if (new Date(value) < new Date()) {
-        throw new Error('Ngày check-in không thể trong quá khứ');
+      const inDay = new Date(value);
+      inDay.setHours(0, 0, 0, 0);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (inDay < today) {
+        throw new Error('Ngày check-in không thể trước hôm nay');
       }
       return true;
     }),

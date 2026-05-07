@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Wrench, RefreshCw, Eye } from 'lucide-react';
 import NavBar from '../components/NavBar';
 import styles from '../styles/Dashboard.module.css';
 import badgeStyles from '../styles/Badge.module.css';
 import buttonStyles from '../styles/Button.module.css';
-import { apiCall } from '../config/api';
 import maintenanceService from '../services/maintenanceService';
 import { roomService } from '../services/roomService';
 
@@ -21,7 +20,7 @@ const MaintenanceDashboard = ({ onLogout }) => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showRoomDetail, setShowRoomDetail] = useState(false);
 
-  const loadRequests = async () => {
+  const loadRequests = useCallback(async () => {
     try {
       setLoading(true);
       const data = await maintenanceService.getRequests();
@@ -32,9 +31,9 @@ const MaintenanceDashboard = ({ onLogout }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadMaintenanceRooms = async () => {
+  const loadMaintenanceRooms = useCallback(async () => {
     try {
       const data = await roomService.getMaintenanceRooms();
       setMaintenanceRooms(Array.isArray(data) ? data : (data.data || []));
@@ -42,11 +41,11 @@ const MaintenanceDashboard = ({ onLogout }) => {
       console.warn('Could not load maintenance rooms:', err);
       setMaintenanceRooms([]);
     }
-  };
+  }, []);
 
-  const fetchAllData = async () => {
+  const fetchAllData = useCallback(async () => {
     await Promise.all([loadRequests(), loadMaintenanceRooms()]);
-  };
+  }, [loadRequests, loadMaintenanceRooms]);
 
   useEffect(() => {
     fetchAllData();
@@ -57,7 +56,7 @@ const MaintenanceDashboard = ({ onLogout }) => {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchAllData]);
 
   const handleAssignToMe = async (requestId) => {
     try {

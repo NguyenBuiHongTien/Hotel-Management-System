@@ -9,9 +9,9 @@
   <img alt="Node.js" src="https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white">
   <img alt="Express" src="https://img.shields.io/badge/Express-5.x-000000?logo=express&logoColor=white">
   <img alt="React" src="https://img.shields.io/badge/React-19.x-61DAFB?logo=react&logoColor=000">
+  <img alt="Vite" src="https://img.shields.io/badge/Vite-8.x-646CFF?logo=vite&logoColor=white">
   <img alt="MongoDB" src="https://img.shields.io/badge/MongoDB-7.x-47A248?logo=mongodb&logoColor=white">
   <img alt="Docker" src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white">
-  <img alt="License" src="https://img.shields.io/badge/License-Educational-blue">
 </p>
 
 ---
@@ -20,8 +20,8 @@
 
 Hệ thống gồm:
 - **Backend**: Node.js + Express + MongoDB, cung cấp REST API cho nghiệp vụ khách sạn.
-- **Frontend**: React, giao diện dashboard riêng theo vai trò người dùng.
-- **Triển khai**: Docker Compose để chạy đồng bộ MongoDB + Backend + Frontend.
+- **Frontend**: React + Vite, giao diện dashboard riêng theo vai trò người dùng.
+- **Triển khai**: Docker Compose với profile `dev` và `prod`.
 
 Vai trò hỗ trợ: `manager`, `receptionist`, `accountant`, `housekeeper`, `maintenance`.
 
@@ -29,12 +29,13 @@ Vai trò hỗ trợ: `manager`, `receptionist`, `accountant`, `housekeeper`, `ma
 
 ## Tính năng chính
 
-- Xác thực bằng JWT, phân quyền theo vai trò.
+- Xác thực JWT, phân quyền theo vai trò.
 - Quản lý đặt phòng, phòng, loại phòng, khách hàng.
 - Nghiệp vụ check-in/check-out và thanh toán.
 - Quản lý hóa đơn, giao dịch, báo cáo doanh thu/công suất.
 - Quản lý yêu cầu bảo trì và trạng thái xử lý.
 - Dashboard riêng theo vai trò người dùng.
+- Tích hợp gửi email nhắc lịch qua Gmail API.
 
 ---
 
@@ -44,14 +45,15 @@ Vai trò hỗ trợ: `manager`, `receptionist`, `accountant`, `housekeeper`, `ma
 - Node.js, Express
 - MongoDB, Mongoose
 - JWT, bcryptjs
-- express-validator
-- express-rate-limit
+- express-validator, express-rate-limit, helmet
+- Google APIs (gmail)
 
 ### Frontend
-- React (Create React App)
+- React + Vite
 - react-router-dom
 - CSS Modules
 - recharts, lucide-react
+- Vitest + Testing Library
 
 ### DevOps
 - Docker, Docker Compose
@@ -63,48 +65,27 @@ Vai trò hỗ trợ: `manager`, `receptionist`, `accountant`, `housekeeper`, `ma
 ```text
 CK_SOA/
 ├─ backend/
-│  ├─ config/                 # Kết nối DB
-│  ├─ controllers/            # Xử lý nghiệp vụ
-│  ├─ middleware/             # Auth, lỗi, rate limit, validate
-│  ├─ models/                 # Mongoose models
-│  ├─ routes/api/             # REST API routes
-│  ├─ scripts/seeders/        # Seed dữ liệu mẫu
-│  └─ server.js               # Entry point backend
+│  ├─ config/
+│  ├─ controllers/
+│  ├─ middleware/
+│  ├─ models/
+│  ├─ routes/api/
+│  ├─ scripts/seeders/
+│  ├─ services/
+│  ├─ tests/
+│  └─ server.js
 ├─ frontend/
-│  ├─ src/components/         # UI components theo vai trò
-│  ├─ src/pages/              # Trang dashboard, login
-│  ├─ src/services/           # API service layer
-│  ├─ src/hooks/              # Custom hooks
-│  ├─ src/config/api.js       # API base URL
+│  ├─ src/components/
+│  ├─ src/pages/
+│  ├─ src/services/
+│  ├─ src/hooks/
+│  ├─ src/config/api.js
+│  ├─ vite.config.js
 │  └─ Dockerfile
-├─ mongo-init/rs-init.js      # Mongo init script cho Docker
+├─ mongo-init/rs-init.js
 ├─ docker-compose.yml
 └─ Postman_Collection.json
 ```
-
----
-
-## Kiến trúc hệ thống (SOA)
-
-```text
-[ React Frontend ]
-        |
-        | HTTP/JSON + JWT
-        v
-[ Express API Layer ]
-  | Auth Service
-  | Booking Service
-  | Room Service
-  | Invoice/Payment Service
-  | Report Service
-  v
-[ MongoDB ]
-```
-
-Luồng chính:
-- Frontend gọi API qua `frontend/src/services/*`.
-- Backend xử lý theo route/controller, xác thực qua middleware JWT.
-- Dữ liệu lưu tại MongoDB qua Mongoose models.
 
 ---
 
@@ -119,28 +100,26 @@ Luồng chính:
 
 ## Cấu hình môi trường
 
-### 1) Backend `.env`
-
-Tạo file `backend/.env`:
+### 1) Backend `backend/.env`
 
 ```env
 MONGODB_URL=mongodb://localhost:27017/hotel_management
 JWT_SECRET=your_strong_secret
-FRONTEND_URL=http://localhost:3000
+FRONTEND_URL=http://localhost:5173
 PORT=5000
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GMAIL_REFRESH_TOKEN=
+GMAIL_SENDER_EMAIL=
 ```
 
 > Lưu ý bảo mật: không commit giá trị secret thật lên GitHub.
 
-### 2) Frontend `.env` (tùy chọn)
-
-Tạo file `frontend/.env` nếu muốn đổi API URL:
+### 2) Frontend `frontend/.env` (tùy chọn)
 
 ```env
-REACT_APP_API_URL=http://localhost:5000/api
+VITE_API_URL=http://localhost:5000/api
 ```
-
-Nếu không có, hệ thống dùng mặc định giống trên.
 
 ---
 
@@ -165,29 +144,38 @@ npm start
 
 Backend chạy tại: `http://localhost:5000`
 
-### Bước 3: Chạy frontend
+### Bước 3: Chạy frontend (Vite)
 
 ```bash
 cd frontend
-npm start
+npm run dev
 ```
 
-Frontend chạy tại: `http://localhost:3000`
+Frontend chạy tại: `http://localhost:5173`
 
 ---
 
-## Chạy bằng Docker Compose
+## Chạy bằng Docker Compose (profiles dev/prod)
 
 Từ thư mục gốc project:
 
 ```bash
-docker compose up -d --build
+# Production profile (Nginx + image optimized)
+docker compose --profile prod up -d --build
+
+# Development profile (hot reload qua volume mount)
+docker compose --profile dev up -d --build
 ```
 
-Sau khi chạy:
+Sau khi chạy profile `prod`:
 - Frontend: `http://localhost:3000`
 - Backend API: `http://localhost:5000/api`
-- MongoDB: `mongodb://localhost:27017`
+
+Sau khi chạy profile `dev`:
+- Frontend: `http://localhost:5173`
+- Backend API: `http://localhost:5000/api`
+
+MongoDB: `mongodb://localhost:27017`
 
 Dừng hệ thống:
 
@@ -240,7 +228,7 @@ Base URL: `/api`
 - `GET /dashboard/revenue`
 - `POST /maintenance/issues`, `GET /maintenance/requests`
 
-Bạn có thể import file `Postman_Collection.json` để test API nhanh.
+Bạn có thể import `Postman_Collection.json` để test API nhanh.
 
 ---
 
@@ -248,14 +236,16 @@ Bạn có thể import file `Postman_Collection.json` để test API nhanh.
 
 ### Backend
 - `npm start`: chạy server
+- `npm test -- --watchAll=false`: chạy test
 - `npm run seed:all`: seed toàn bộ
+- `npm run gmail:token`: lấy refresh token Gmail
 - `npm run check-role`: kiểm tra role user
 - `npm run fix-accountant`: sửa role accountant nếu sai
 
 ### Frontend
-- `npm start`: chạy dev server
+- `npm run dev`: chạy Vite dev server
 - `npm run build`: build production
-- `npm test`: chạy test
+- `npm test`: chạy test (Vitest)
 
 ---
 
@@ -266,6 +256,3 @@ Bạn có thể import file `Postman_Collection.json` để test API nhanh.
 - [ ] Hoàn thiện phân lớp service theo bounded context rõ hơn.
 - [ ] Thiết lập CI/CD (lint, test, build, deploy).
 - [ ] Thêm phân quyền chi tiết hơn theo action-level.
-- [ ] Bổ sung ảnh demo.
-
-

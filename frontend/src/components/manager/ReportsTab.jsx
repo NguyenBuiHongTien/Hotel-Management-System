@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Calendar, Download, Eye } from 'lucide-react';
+import { FileText, Eye } from 'lucide-react';
 import { reportService } from '../../services/reportService';
 import styles from '../../styles/Dashboard.module.css';
 import tableStyles from '../../styles/Table.module.css';
@@ -44,14 +44,13 @@ const ReportsTab = () => {
 
     try {
       setGenerating(true);
-      let data;
       if (reportType === 'occupancy') {
-        data = await reportService.getOccupancyReport({
+        await reportService.saveOccupancyReport({
           fromDate: dateRange.fromDate,
           toDate: dateRange.toDate
         });
       } else if (reportType === 'revenue') {
-        data = await reportService.getRevenueReport({
+        await reportService.saveRevenueReport({
           fromDate: dateRange.fromDate,
           toDate: dateRange.toDate
         });

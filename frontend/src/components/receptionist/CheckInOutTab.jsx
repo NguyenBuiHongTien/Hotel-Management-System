@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Search, Calendar, RefreshCw, Eye } from 'lucide-react';
+import { CheckCircle, XCircle, Search, RefreshCw, Eye } from 'lucide-react';
 import { bookingService } from '../../services/bookingService';
 import { useBookings } from '../../hooks/useBookings';
 import styles from '../../styles/Dashboard.module.css';

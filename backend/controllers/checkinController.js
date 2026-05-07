@@ -3,6 +3,7 @@ const Booking = require('../models/bookingModel');
 const Room = require('../models/roomModel');
 const Invoice = require('../models/invoiceModel');
 const mongoose = require('mongoose');
+const { sendCheckInEmail, sendCheckoutInvoiceEmail } = require('./notificationController');
 
 /**
  * @desc    Check-in
@@ -11,10 +12,10 @@ const mongoose = require('mongoose');
  */
 const checkIn = asyncHandler(async (req, res) => {
   const { bookingId } = req.body;
-  
+
   const session = await mongoose.startSession();
   session.startTransaction();
-  
+
   try {
     const booking = await Booking.findById(bookingId).session(session);
     if (!booking) {
@@ -27,16 +28,31 @@ const checkIn = asyncHandler(async (req, res) => {
       res.status(400);
       throw new Error(`Booking đang ở trạng thái '${booking.status}', không thể check-in`);
     }
-    
-    // 1. Cập nhật trạng thái phòng
+
     await Room.findByIdAndUpdate(booking.room, { status: 'occupied' }).session(session);
-    
-    // 2. Cập nhật trạng thái booking
+
     booking.status = 'checked_in';
     await booking.save({ session });
-    
+
     await session.commitTransaction();
-    res.json(booking);
+
+    const bookingForEmail = await Booking.findById(booking._id).populate([
+      { path: 'guest' },
+      { path: 'room', populate: { path: 'roomType' } },
+    ]);
+    let emailResult = { sent: false, reason: 'booking_not_found_after_checkin' };
+    if (bookingForEmail) {
+      emailResult = await sendCheckInEmail(bookingForEmail);
+    } else {
+      console.warn(
+        `[email] Không tải lại booking sau check-in, bookingId=${booking._id}`
+      );
+    }
+
+    res.json({
+      ...booking.toObject(),
+      email: emailResult,
+    });
   } catch (error) {
     await session.abortTransaction();
     throw error;
@@ -66,32 +82,50 @@ const checkOut = asyncHandler(async (req, res) => {
       res.status(400);
       throw new Error(`Booking đang ở trạng thái '${booking.status}', không thể check-out`);
     }
-    
-    // 1. Cập nhật trạng thái phòng thành 'dirty' (cần dọn)
+
     await Room.findByIdAndUpdate(booking.room, { status: 'dirty' }).session(session);
-    
-    // 2. Cập nhật trạng thái booking
+
     booking.status = 'checked_out';
-    // booking.actualCheckOut = Date.now(); // (Nếu model có trường này)
-    
-    // 3. Tự động tạo hóa đơn (Theo logic file Doc)
+
     let invoice = await Invoice.findOne({ booking: booking._id }).session(session);
     if (!invoice) {
-        invoice = await Invoice.create({
-            booking: booking._id,
-            totalAmount: booking.totalPrice,
-            issueDate: Date.now(),
-            paymentStatus: 'pending' // Khớp với invoiceModel
-        }, { session });
+      const createdInvoices = await Invoice.create(
+        [{
+          booking: booking._id,
+          totalAmount: booking.totalPrice,
+          issueDate: Date.now(),
+          paymentStatus: 'pending',
+        }],
+        { session }
+      );
+      [invoice] = createdInvoices;
     }
-    
+
     await booking.save({ session });
-    
+
     await session.commitTransaction();
+
+    const invoiceForEmail = await Invoice.findById(invoice._id).populate({
+      path: 'booking',
+      populate: [
+        { path: 'guest' },
+        { path: 'room', populate: { path: 'roomType' } },
+      ],
+    });
+    let emailResult = { sent: false, reason: 'invoice_not_found_after_checkout' };
+    if (invoiceForEmail) {
+      emailResult = await sendCheckoutInvoiceEmail(invoiceForEmail);
+    } else {
+      console.warn(
+        `[email] Không tìm thấy invoice sau checkout, invoiceId=${invoice._id}`
+      );
+    }
+
     res.json({
-        message: 'Check-out thành công, đã tạo hóa đơn.',
-        booking,
-        invoice
+      message: 'Check-out thành công, đã tạo hóa đơn.',
+      booking,
+      invoice,
+      email: emailResult,
     });
   } catch (error) {
     await session.abortTransaction();

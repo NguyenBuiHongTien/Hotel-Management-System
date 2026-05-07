@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Search, User } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Plus, Edit, Search, Trash2 } from 'lucide-react';
 import { guestService } from '../../services/guestService';
 import styles from '../../styles/Dashboard.module.css';
 import tableStyles from '../../styles/Table.module.css';
@@ -18,11 +18,7 @@ const GuestsTab = () => {
     address: ''
   });
 
-  useEffect(() => {
-    loadGuests();
-  }, []);
-
-  const loadGuests = async () => {
+  const loadGuests = useCallback(async () => {
     try {
       setLoading(true);
       const filters = {};
@@ -37,16 +33,18 @@ const GuestsTab = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm]);
+
+  useEffect(() => {
+    loadGuests();
+  }, [loadGuests]);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      if (searchTerm !== undefined) {
-        loadGuests();
-      }
+      loadGuests();
     }, 500);
     return () => clearTimeout(timeoutId);
-  }, [searchTerm]);
+  }, [searchTerm, loadGuests]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -78,14 +76,18 @@ const GuestsTab = () => {
     setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Bạn có chắc muốn xóa khách hàng này?')) {
-      try {
-        // Note: Backend might not have delete endpoint, so we'll skip for now
-        alert('Chức năng xóa chưa được hỗ trợ');
-      } catch (err) {
-        alert('Lỗi: ' + (err.message || 'Không thể xóa khách hàng'));
-      }
+  const handleDelete = async (guest) => {
+    const displayName = guest.fullName || guest.customerId || guest._id?.slice(-6) || 'khách này';
+    if (!window.confirm(`Bạn có chắc muốn xóa "${displayName}"?`)) {
+      return;
+    }
+
+    try {
+      await guestService.deleteGuest(guest._id);
+      alert('Xóa khách hàng thành công!');
+      loadGuests();
+    } catch (err) {
+      alert('Lỗi: ' + (err.message || 'Không thể xóa khách hàng'));
     }
   };
 
@@ -158,6 +160,13 @@ const GuestsTab = () => {
                         title="Chỉnh sửa"
                       >
                         <Edit size={16} />
+                      </button>
+                      <button
+                        className={tableStyles.actionBtn}
+                        onClick={() => handleDelete(guest)}
+                        title="Xóa khách"
+                      >
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </td>

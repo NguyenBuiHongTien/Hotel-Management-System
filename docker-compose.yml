@@ -1,11 +1,5 @@
-# ============================================
-# Docker Compose - Hệ thống Quản lý Khách sạn
-# Chạy: docker-compose up -d
-# ============================================
-version: "3.8"
-
 services:
-  # ---------- MongoDB ----------
+  # ---------- MongoDB (dùng chung cho dev/prod) ----------
   mongodb:
     image: mongo:7
     container_name: hotel_mongodb
@@ -24,8 +18,9 @@ services:
       retries: 5
     command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
 
-  # ---------- Backend (Node.js + Express) ----------
+  # ---------- Production profile ----------
   backend:
+    profiles: ["prod"]
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -41,18 +36,24 @@ services:
       # CORS: cho phép frontend (trình duyệt gọi API)
       FRONTEND_URL: http://localhost:3000
       JWT_SECRET: ${JWT_SECRET:-jwt-secret-doi-trong-env-file}
+      # Gmail API (tùy chọn — thêm vào file .env ở root project)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GMAIL_REFRESH_TOKEN: ${GMAIL_REFRESH_TOKEN:-}
+      GMAIL_SENDER_EMAIL: ${GMAIL_SENDER_EMAIL:-}
     depends_on:
       mongodb:
         condition: service_healthy
 
-  # ---------- Frontend (React build + Nginx) ----------
+  # ---------- Frontend production (Vite build + Nginx) ----------
   frontend:
+    profiles: ["prod"]
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
         # URL API khi user mở từ trình duyệt (localhost:5000)
-        REACT_APP_API_URL: http://localhost:5000/api
+        VITE_API_URL: http://localhost:5000/api
     container_name: hotel_frontend
     restart: unless-stopped
     ports:
@@ -60,5 +61,50 @@ services:
     depends_on:
       - backend
 
+  # ---------- Development profile ----------
+  backend-dev:
+    profiles: ["dev"]
+    image: node:20-alpine
+    container_name: hotel_backend_dev
+    working_dir: /app
+    restart: unless-stopped
+    command: sh -c "npm install && node --watch server.js"
+    env_file:
+      - ./backend/.env
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      MONGODB_URL: mongodb://mongodb:27017/hotel_management
+      FRONTEND_URL: http://localhost:5173
+      JWT_SECRET: ${JWT_SECRET:-jwt-secret-doi-trong-env-file}
+      TRUST_PROXY: "false"
+    volumes:
+      - ./backend:/app
+      - backend_node_modules:/app/node_modules
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  frontend-dev:
+    profiles: ["dev"]
+    image: node:20-alpine
+    container_name: hotel_frontend_dev
+    working_dir: /app
+    restart: unless-stopped
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:5000/api
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      - backend-dev
+
 volumes:
   mongodb_data:
+  backend_node_modules:
+  frontend_node_modules:

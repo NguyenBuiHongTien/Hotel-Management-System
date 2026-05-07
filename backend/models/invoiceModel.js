@@ -30,7 +30,8 @@ const invoiceSchema = new mongoose.Schema({
   booking: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Booking',
-    required: true
+    required: true,
+    unique: true
   }
 }, { timestamps: true });
 

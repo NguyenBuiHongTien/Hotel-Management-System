@@ -46,6 +46,9 @@ export const roomService = {
       queryParams.append('checkOutDate', checkOutDate);
       if (filters.roomTypeId) queryParams.append('roomTypeId', filters.roomTypeId);
       if (filters.capacity) queryParams.append('capacity', filters.capacity);
+      if (filters.excludeBookingId) {
+        queryParams.append('excludeBookingId', filters.excludeBookingId);
+      }
 
       const data = await apiCall(`/rooms/available?${queryParams.toString()}`);
       return data;

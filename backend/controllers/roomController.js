@@ -132,7 +132,7 @@ const updateRoomStatus = asyncHandler(async (req, res) => {
  * @access  Private (Receptionist)
  */
 const searchAvailableRooms = asyncHandler(async (req, res) => {
-  const { checkInDate, checkOutDate, roomTypeId, capacity } = req.query;
+  const { checkInDate, checkOutDate, roomTypeId, capacity,  excludeBookingId } = req.query;
 
   if (!checkInDate || !checkOutDate) {
     res.status(400);
@@ -140,15 +140,18 @@ const searchAvailableRooms = asyncHandler(async (req, res) => {
   }
   const checkIn = new Date(checkInDate);
   const checkOut = new Date(checkOutDate);
+  
 
   // 1. Tìm các phòng đã bị đặt trong khoảng ngày đó
-  const conflicts = await Booking.find({
+  const conflictFilter = {
     status: { $in: ['confirmed', 'checked_in'] },
-    $or: [
-      { checkInDate: { $lt: checkOut }, checkOutDate: { $gt: checkIn } }
-    ]
-  }).select('room');
-  const bookedRoomIds = conflicts.map(b => b.room);
+    $or: [{ checkInDate: { $lt: checkOut }, checkOutDate: { $gt: checkIn } }],
+  };
+  if (excludeBookingId) {
+    conflictFilter._id = { $ne: excludeBookingId };
+  }
+  const conflicts = await Booking.find(conflictFilter).select('room');
+  const bookedRoomIds = conflicts.map((b) => b.room);
 
   // 2. Xây dựng bộ lọc cho Room
   const roomFilter = {

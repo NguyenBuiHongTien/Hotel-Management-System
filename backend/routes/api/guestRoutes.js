@@ -7,7 +7,8 @@ const {
     getAllGuests,
     getGuestById,
     createGuest,
-    updateGuest
+    updateGuest,
+    deleteGuest
 } = require('../../controllers/guestController');
 const { protect, authorize } = require('../../middleware/authMiddleware');
 
@@ -20,6 +21,7 @@ router.route('/')
 
 router.route('/:guestId') // Khớp với param 'guestId' trong Doc
     .get(getGuestById)
-    .put(updateGuestRules, validate, updateGuest); // Đổi sang PUT
+    .put(updateGuestRules, validate, updateGuest) // Đổi sang PUT
+    .delete(authorize('manager'), deleteGuest);
 
 module.exports = router;

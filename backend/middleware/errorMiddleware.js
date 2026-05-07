@@ -5,7 +5,7 @@ const notFound = (req, res, next) => {
   next(error);
 };
 const errorHandler = (err, req, res, next) => {
-    let statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+    let statusCode = err.status || (res.statusCode === 200 ? 500 : res.statusCode);
     let message = err.message;
   
     // Mongoose CastError (ID không hợp lệ)
@@ -44,10 +44,12 @@ const errorHandler = (err, req, res, next) => {
       message = `Lỗi upload file: ${err.message}`;
     }
   
-    res.status(statusCode).json({
-      message: message,
-      stack: process.env.NODE_ENV === 'production' ? null : err.stack,
-    });
+    const payload = { message };
+    if (process.env.NODE_ENV !== 'production') {
+      payload.stack = err.stack;
+    }
+
+    res.status(statusCode).json(payload);
 
   };
 

@@ -3,6 +3,8 @@ const Booking = require('../models/bookingModel');
 const Room = require('../models/roomModel');
 const Guest = require('../models/guestModel');
 const RoomType = require('../models/roomTypeModel');
+const { sendBookingConfirmation } = require('./notificationController');
+const { startOfDay, endOfDay } = require('../utils/dateRange');
 
 /**
  * @desc    Tạo booking mới
@@ -28,9 +30,19 @@ const createBooking = asyncHandler(async (req, res) => {
       res.status(404); throw new Error('Không tìm thấy Guest ID');
     }
   } else if (guestInfo && guestInfo.fullName && guestInfo.phoneNumber) {
+    const guestUpdate = {
+      $setOnInsert: {
+        fullName: guestInfo.fullName,
+        phoneNumber: guestInfo.phoneNumber,
+      },
+    };
+    if (guestInfo.email) guestUpdate.$set = { ...(guestUpdate.$set || {}), email: guestInfo.email };
+    if (guestInfo.address) guestUpdate.$set = { ...(guestUpdate.$set || {}), address: guestInfo.address };
+    if (guestInfo.fullName) guestUpdate.$set = { ...(guestUpdate.$set || {}), fullName: guestInfo.fullName };
+
     guest = await Guest.findOneAndUpdate(
       { phoneNumber: guestInfo.phoneNumber }, // Dùng SĐT làm key
-      { $setOnInsert: guestInfo },
+      guestUpdate,
       { upsert: true, new: true, runValidators: true }
     );
   } else {
@@ -102,7 +114,12 @@ const createBooking = asyncHandler(async (req, res) => {
       { path: 'room', populate: { path: 'roomType' } },
       { path: 'createdBy', select: 'name role' }
   ]);
-  res.status(201).json(populatedBooking);
+
+  const emailResult = await sendBookingConfirmation(populatedBooking);
+  res.status(201).json({
+    ...populatedBooking.toObject(),
+    email: emailResult,
+  });
 });
 
 /**
@@ -115,8 +132,12 @@ const getAllBookings = asyncHandler(async (req, res) => {
   if (req.query.status) filter.status = req.query.status;
   if (req.query.customerId) filter.guest = req.query.customerId;
   if (req.query.roomId) filter.room = req.query.roomId;
-  if (req.query.fromDate) filter.checkInDate = { ...filter.checkInDate, $gte: new Date(req.query.fromDate) };
-  if (req.query.toDate) filter.checkOutDate = { ...filter.checkOutDate, $lte: new Date(req.query.toDate) };
+  if (req.query.fromDate) {
+    filter.checkInDate = { ...filter.checkInDate, $gte: startOfDay(req.query.fromDate) };
+  }
+  if (req.query.toDate) {
+    filter.checkOutDate = { ...filter.checkOutDate, $lte: endOfDay(req.query.toDate) };
+  }
 
   // Pagination
   const page = parseInt(req.query.page) || 1;
@@ -167,22 +188,88 @@ const getBookingById = asyncHandler(async (req, res) => {
  * @access  Private (Receptionist)
  */
 const updateBooking = asyncHandler(async (req, res) => {
-  const { roomId, checkInDate, checkOutDate, numberOfGuests, status } = req.body;
+  const { roomId, checkInDate, checkOutDate, numberOfGuests } = req.body;
   const booking = await Booking.findById(req.params.bookingId);
   if (!booking) {
     res.status(404);
     throw new Error('Không tìm thấy booking');
   }
-  
-  // Cảnh báo: Logic này rất phức tạp
-  // Nếu đổi ngày hoặc phòng, cần kiểm tra xung đột và tính lại tiền
-  // Tạm thời chỉ cập nhật các trường đơn giản:
-  booking.numberOfGuests = numberOfGuests || booking.numberOfGuests;
-  booking.status = status || booking.status; // Cẩn thận khi đổi status ở đây
-  // TODO: Thêm logic kiểm tra xung đột nếu checkInDate, checkOutDate, roomId thay đổi
-  
+
+  const targetRoomId = roomId ? String(roomId) : String(booking.room);
+  const targetCheckIn = checkInDate ? new Date(checkInDate) : booking.checkInDate;
+  const targetCheckOut = checkOutDate ? new Date(checkOutDate) : booking.checkOutDate;
+
+  const roomOrDatesChanged =
+    targetRoomId !== String(booking.room) ||
+    targetCheckIn.getTime() !== new Date(booking.checkInDate).getTime() ||
+    targetCheckOut.getTime() !== new Date(booking.checkOutDate).getTime();
+
+  if (roomOrDatesChanged) {
+    if (booking.status === 'checked_in' || booking.status === 'checked_out') {
+      res.status(400);
+      throw new Error('Không thể đổi phòng hoặc ngày khi booking đã check-in hoặc check-out');
+    }
+
+    const nights = Math.ceil(
+      (targetCheckOut - targetCheckIn) / (1000 * 60 * 60 * 24)
+    );
+    if (nights <= 0) {
+      res.status(400);
+      throw new Error('Ngày check-out phải sau ngày check-in');
+    }
+
+    const conflict = await Booking.findOne({
+      _id: { $ne: booking._id },
+      room: targetRoomId,
+      status: { $in: ['confirmed', 'checked_in'] },
+      $or: [
+        {
+          checkInDate: { $lte: targetCheckIn },
+          checkOutDate: { $gt: targetCheckIn },
+        },
+        {
+          checkInDate: { $lt: targetCheckOut },
+          checkOutDate: { $gte: targetCheckOut },
+        },
+        {
+          checkInDate: { $gte: targetCheckIn },
+          checkOutDate: { $lte: targetCheckOut },
+        },
+      ],
+    });
+    if (conflict) {
+      res.status(400);
+      throw new Error('Phòng đã được đặt trong khoảng ngày này');
+    }
+
+    const room = await Room.findById(targetRoomId);
+    if (!room) {
+      res.status(404);
+      throw new Error('Không tìm thấy phòng');
+    }
+    const roomType = await RoomType.findById(room.roomType);
+    if (!roomType) {
+      res.status(404);
+      throw new Error('Không tìm thấy loại phòng liên kết');
+    }
+
+    booking.room = targetRoomId;
+    booking.checkInDate = targetCheckIn;
+    booking.checkOutDate = targetCheckOut;
+    booking.totalPrice = roomType.basePrice * nights;
+  }
+
+  if (numberOfGuests !== undefined && numberOfGuests !== null) {
+    booking.numberOfGuests = numberOfGuests;
+  }
+
   const updated = await booking.save();
-  res.json(updated);
+  const populated = await updated.populate([
+    { path: 'guest' },
+    { path: 'room', populate: { path: 'roomType' } },
+    { path: 'createdBy', select: 'name role' },
+  ]);
+  res.json(populated);
 });
 
 /**

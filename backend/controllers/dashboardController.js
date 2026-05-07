@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const Room = require('../models/roomModel');
 const Invoice = require('../models/invoiceModel');
+const { startOfDay, endOfDay } = require('../utils/dateRange');
 
 /**
  * @desc    Lấy số liệu doanh thu (nhanh) cho dashboard
@@ -12,7 +13,7 @@ const getRevenueDashboard = asyncHandler(async (req, res, next) => {
     
     const matchFilter = { paymentStatus: 'paid' };
     if (fromDate && toDate) {
-        matchFilter.updatedAt = { $gte: new Date(fromDate), $lte: new Date(toDate) };
+        matchFilter.updatedAt = { $gte: startOfDay(fromDate), $lte: endOfDay(toDate) };
     }
 
     const revenueAgg = await Invoice.aggregate([

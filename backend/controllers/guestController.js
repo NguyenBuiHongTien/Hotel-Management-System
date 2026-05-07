@@ -1,5 +1,6 @@
 const asyncHandler = require('express-async-handler');
 const Guest = require('../models/guestModel');
+const Booking = require('../models/bookingModel');
 
 /**
  * @desc    Lấy danh sách khách
@@ -93,9 +94,33 @@ const updateGuest = asyncHandler(async (req, res) => {
   res.status(200).json(updatedGuest);
 });
 
+/**
+ * @desc    Xóa khách
+ * @route   DELETE /api/guests/:guestId
+ * @access  Private (Manager)
+ */
+const deleteGuest = asyncHandler(async (req, res) => {
+  const guest = await Guest.findById(req.params.guestId);
+  if (!guest) {
+    res.status(404);
+    throw new Error('Không tìm thấy khách');
+  }
+
+  // Tránh xóa dữ liệu đang được booking tham chiếu để giữ toàn vẹn dữ liệu.
+  const relatedBookings = await Booking.countDocuments({ guest: guest._id });
+  if (relatedBookings > 0) {
+    res.status(400);
+    throw new Error('Không thể xóa khách đã có đặt phòng trong hệ thống');
+  }
+
+  await guest.deleteOne();
+  res.status(200).json({ message: 'Đã xóa khách thành công' });
+});
+
 module.exports = {
   getAllGuests,
   getGuestById, // Sửa tên hàm
   createGuest,
   updateGuest,
+  deleteGuest,
 };

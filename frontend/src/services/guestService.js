@@ -49,5 +49,16 @@ export const guestService = {
       throw error;
     }
   },
+
+  deleteGuest: async (id) => {
+    try {
+      const data = await apiCall(`/guests/${id}`, {
+        method: 'DELETE',
+      });
+      return { success: true, data };
+    } catch (error) {
+      throw error;
+    }
+  },
 };
 

@@ -1,5 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const Invoice = require('../models/invoiceModel');
+const { startOfDay, endOfDay } = require('../utils/dateRange');
+const { sendPaymentSuccessEmail } = require('./notificationController');
 
 /**
  * @desc    Ghi nhận thanh toán
@@ -30,7 +32,21 @@ const recordPayment = asyncHandler(async (req, res, next) => {
   
   await invoice.save();
 
-  res.status(200).json(invoice);
+  const invoiceForEmail = await Invoice.findById(invoice._id).populate({
+    path: 'booking',
+    populate: [
+      { path: 'guest' },
+      { path: 'room', populate: { path: 'roomType' } },
+    ],
+  });
+  const emailResult = invoiceForEmail
+    ? await sendPaymentSuccessEmail(invoiceForEmail)
+    : { sent: false, reason: 'invoice_not_found_after_payment' };
+
+  res.status(200).json({
+    ...invoice.toObject(),
+    email: emailResult,
+  });
 });
 
 /**
@@ -57,10 +73,10 @@ const getTransactionHistory = asyncHandler(async (req, res, next) => {
         if (fromDate || toDate) {
             filter.updatedAt = {};
             if (fromDate) {
-                filter.updatedAt.$gte = new Date(fromDate);
+                filter.updatedAt.$gte = startOfDay(fromDate);
             }
             if (toDate) {
-                filter.updatedAt.$lte = new Date(toDate);
+                filter.updatedAt.$lte = endOfDay(toDate);
             }
         }
 

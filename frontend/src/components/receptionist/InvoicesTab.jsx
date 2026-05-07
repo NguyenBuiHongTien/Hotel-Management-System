@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Eye, FileText, Search, Calendar } from 'lucide-react';
+import React, { useState, useEffect, useCallback} from 'react';
+import { Eye } from 'lucide-react';
 import { invoiceService } from '../../services/invoiceService';
 import styles from '../../styles/Dashboard.module.css';
 import tableStyles from '../../styles/Table.module.css';
@@ -17,13 +17,20 @@ const InvoicesTab = () => {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
-  useEffect(() => {
-    loadInvoices();
-  }, [filters]);
+  const normalizePaymentStatus = (status) =>
+    (status || '').toString().trim().toLowerCase();
 
-  const loadInvoices = async () => {
+  const paymentStatusLabel = (status) => {
+    const s = normalizePaymentStatus(status);
+    if (s === 'paid') return 'Đã thanh toán';
+    if (s === 'cancelled') return 'Đã hủy';
+    return 'Chưa thanh toán';
+  };
+
+  const loadInvoices = useCallback(async () => {
     try {
       setLoading(true);
+
       const filterParams = {};
       if (filters.status) filterParams.status = filters.status;
       if (filters.fromDate) filterParams.fromDate = filters.fromDate;
@@ -37,7 +44,11 @@ const InvoicesTab = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
+
+  useEffect(() => {
+    loadInvoices();
+  }, [loadInvoices]);
 
   const handleViewDetail = async (invoiceId) => {
     try {
@@ -49,15 +60,6 @@ const InvoicesTab = () => {
     }
   };
 
-  const handleViewGuestInvoice = async (bookingId) => {
-    try {
-      const data = await invoiceService.getGuestInvoice(bookingId);
-      setSelectedInvoice(data);
-      setShowDetailModal(true);
-    } catch (err) {
-      alert('Không thể tải hóa đơn khách');
-    }
-  };
 
   return (
     <div>
@@ -150,7 +152,7 @@ const InvoicesTab = () => {
         <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Chưa thanh toán</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#ef4444' }}>
-            {invoices.filter(inv => (inv.paymentStatus || '').toLowerCase() !== 'paid').length}
+          {invoices.filter(inv => normalizePaymentStatus(inv.paymentStatus) === 'pending').length}
           </div>
         </div>
         <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
@@ -202,7 +204,7 @@ const InvoicesTab = () => {
                       (inv.paymentStatus || '').toLowerCase() === 'cancelled' ? badgeStyles.danger : 
                       ''
                     }`}>
-                      {inv.paymentStatus || 'pending'}
+                      {paymentStatusLabel(inv.paymentStatus)}
                     </span>
                   </td>
                   <td className={tableStyles.td}>
@@ -247,7 +249,7 @@ const InvoicesTab = () => {
                 <span className={`${badgeStyles.badge} ${
                   (selectedInvoice.paymentStatus || '').toLowerCase() === 'paid' ? badgeStyles.success : ''
                 }`} style={{ marginLeft: '0.5rem' }}>
-                  {selectedInvoice.paymentStatus || 'pending'}
+                  {paymentStatusLabel(selectedInvoice.paymentStatus)}
                 </span>
               </div>
               <div>

@@ -5,10 +5,7 @@ import StatCard from '../components/StatCard';
 import styles from '../styles/Dashboard.module.css';
 import tableStyles from '../styles/Table.module.css';
 import badgeStyles from '../styles/Badge.module.css';
-import buttonStyles from '../styles/Button.module.css';
-import { apiCall } from '../config/api';
 import invoiceService from '../services/invoiceService';
-import paymentService from '../services/paymentService';
 import TransactionsTab from '../components/accountant/TransactionsTab';
 import ReportsTab from '../components/manager/ReportsTab';
 import InvoiceDetailModal from '../components/accountant/InvoiceDetailModal';
@@ -35,18 +32,20 @@ const AccountantDashboard = ({ onLogout }) => {
 
   useEffect(() => { loadInvoices(); }, []);
 
+  const isPaid = (inv) => (inv.paymentStatus || '').toLowerCase() === 'paid';
   const totalToday = invoices.reduce((sum, inv) => {
-    // quick heuristic: if issueDate is today
-    try {
-      const d = new Date(inv.issueDate || inv.createdAt);
-      const now = new Date();
-      if (d.toDateString() === now.toDateString()) return sum + (inv.totalAmount || 0);
-    } catch (e) {}
+    if (!isPaid(inv)) return sum;
+    const d = new Date(inv.issueDate || inv.createdAt);
+    const now = new Date();
+    if (d.toDateString() === now.toDateString()) return sum + (inv.totalAmount || 0);
     return sum;
   }, 0);
-
-  const totalMonth = invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
-  const unpaidCount = invoices.filter(inv => (inv.paymentStatus || '').toLowerCase() !== 'paid').length;
+  const totalMonth = invoices
+    .filter(isPaid)
+    .reduce((sum, inv) => sum + (inv.totalAmount || 0), 0);
+  const unpaidCount = invoices.filter(
+    inv => (inv.paymentStatus || '').toLowerCase() === 'pending'
+  ).length;
 
   return (
     <div className={styles.container}>
