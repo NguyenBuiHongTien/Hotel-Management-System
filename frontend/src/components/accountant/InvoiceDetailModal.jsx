@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Download, Printer, FileText, User, Calendar, Bed, DollarSign, CreditCard } from 'lucide-react';
+import { X, Download, Printer, FileText, User, Bed, DollarSign } from 'lucide-react';
 import invoiceService from '../../services/invoiceService';
 import styles from '../../styles/Dashboard.module.css';
 import buttonStyles from '../../styles/Button.module.css';

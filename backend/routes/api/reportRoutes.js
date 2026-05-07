@@ -2,23 +2,28 @@
 const express = require('express');
 const router = express.Router();
 const {
-    generateOccupancyReport,
-    generateRevenueReport,
-    listGeneratedReports,
-    getGeneratedReportById,
-    exportComprehensiveReport
+  getOccupancyReportPreview,
+  saveOccupancyReport,
+  getRevenueReportPreview,
+  saveRevenueReport,
+  listGeneratedReports,
+  getGeneratedReportById,
+  exportComprehensiveReport,
 } = require('../../controllers/reportController');
 const { protect, authorize } = require('../../middleware/authMiddleware');
 
-// Chỉ Quản lý và Kế toán
 router.use(protect, authorize('manager', 'accountant'));
 
-// Tạo báo cáo (Generate)
-router.get('/occupancy', generateOccupancyReport);
-router.get('/revenue', generateRevenueReport);
+// Xem nhanh (GET — không ghi DB)
+router.get('/occupancy', getOccupancyReportPreview);
+router.get('/revenue', getRevenueReportPreview);
 router.get('/comprehensive/export', exportComprehensiveReport);
 
-// Xem báo cáo đã lưu (List/Get)
+// Lưu báo cáo (POST — có ghi DB)
+router.post('/occupancy/save', saveOccupancyReport);
+router.post('/revenue/save', saveRevenueReport);
+
+// Danh sách / chi tiết báo cáo đã lưu
 router.get('/', listGeneratedReports);
 router.get('/:reportId', getGeneratedReportById);
 

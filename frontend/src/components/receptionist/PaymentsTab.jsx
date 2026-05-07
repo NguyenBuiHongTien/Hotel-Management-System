@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CreditCard, Search, CheckCircle } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
 import { paymentService } from '../../services/paymentService';
 import { invoiceService } from '../../services/invoiceService';
 import styles from '../../styles/Dashboard.module.css';
@@ -15,8 +15,18 @@ const PaymentsTab = () => {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [processing, setProcessing] = useState(false);
 
+
+  const [paidInvoices, setPaidInvoices] = useState([]);
+
+  const paymentStatusLabel = (status) => {
+    const s = (status || '').toLowerCase();
+    if (s === 'paid') return 'Đã thanh toán';
+    if (s === 'cancelled') return 'Đã hủy';
+    return 'Chưa thanh toán';
+  };
   useEffect(() => {
     loadPendingInvoices();
+    loadPaidInvoices();
   }, []);
 
   const loadPendingInvoices = async () => {
@@ -32,6 +42,15 @@ const PaymentsTab = () => {
     }
   };
 
+  const loadPaidInvoices = async () => {
+    try {
+      const data = await invoiceService.getAllInvoices({ status: 'paid' });
+      setPaidInvoices(Array.isArray(data) ? data : (data.data || []));
+    } catch (err) {
+      console.error('Error loading paid invoices:', err);
+    }
+  };
+
   const handleRecordPayment = async () => {
     if (!selectedInvoice) return;
     
@@ -42,9 +61,11 @@ const PaymentsTab = () => {
         paymentMethod: paymentMethod
       });
       alert('Ghi nhận thanh toán thành công!');
+      setPaymentMethod('cash');
       setShowPaymentModal(false);
       setSelectedInvoice(null);
       loadPendingInvoices();
+      loadPaidInvoices();
     } catch (err) {
       alert('Lỗi: ' + (err.message || 'Không thể ghi nhận thanh toán'));
     } finally {
@@ -110,6 +131,7 @@ const PaymentsTab = () => {
                     <button
                       className={`${buttonStyles.primary} ${buttonStyles.sm}`}
                       onClick={() => {
+                        setPaymentMethod('cash');
                         setSelectedInvoice(inv);
                         setShowPaymentModal(true);
                       }}
@@ -125,9 +147,72 @@ const PaymentsTab = () => {
         </table>
       </div>
 
+      <div style={{ marginTop: '2.5rem' }}>
+        <h2 className={styles.sectionTitle} style={{ marginBottom: '1rem' }}>
+          Hóa đơn đã thanh toán
+        </h2>
+        <div className={tableStyles.tableContainer}>
+          <table className={tableStyles.table}>
+            <thead>
+              <tr>
+                <th className={tableStyles.th}>Mã HĐ</th>
+                <th className={tableStyles.th}>Khách hàng</th>
+                <th className={tableStyles.th}>Phòng</th>
+                <th className={tableStyles.th}>Ngày lập</th>
+                <th className={tableStyles.th}>Tổng tiền</th>
+                <th className={tableStyles.th}>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paidInvoices.length === 0 ? (
+                <tr>
+                  <td className={tableStyles.td} colSpan={6}>
+                    Chưa có hóa đơn đã thanh toán
+                  </td>
+                </tr>
+              ) : (
+                paidInvoices.map((inv) => (
+                  <tr key={inv._id}>
+                    <td className={tableStyles.td}>
+                      #{inv.invoiceId || inv._id?.slice(-6)}
+                    </td>
+                    <td className={tableStyles.td}>
+                      {inv.booking?.guest?.fullName || 'N/A'}
+                    </td>
+                    <td className={tableStyles.td}>
+                      {inv.booking?.room?.roomNumber || inv.booking?.room || 'N/A'}
+                    </td>
+                    <td className={tableStyles.td}>
+                      {new Date(inv.issueDate || inv.createdAt).toLocaleDateString('vi-VN')}
+                    </td>
+                    <td className={tableStyles.td}>
+                      ₫{Number(inv.totalAmount || 0).toLocaleString()}
+                    </td>
+                    <td className={tableStyles.td}>
+                      <span
+                        className={`${badgeStyles.badge} ${badgeStyles.success}`}
+                      >
+                        {paymentStatusLabel(inv.paymentStatus)}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Payment Modal */}
       {showPaymentModal && selectedInvoice && (
-        <div className={styles.modalOverlay} onClick={() => setShowPaymentModal(false)}>
+        <div
+          className={styles.modalOverlay}
+          onClick={() => {
+            setShowPaymentModal(false);
+            setSelectedInvoice(null);
+            setPaymentMethod('cash');
+          }}
+        >
           <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
             <h2>Ghi nhận thanh toán</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
@@ -168,6 +253,7 @@ const PaymentsTab = () => {
                 onClick={() => {
                   setShowPaymentModal(false);
                   setSelectedInvoice(null);
+                  setPaymentMethod('cash');
                 }}
                 disabled={processing}
               >

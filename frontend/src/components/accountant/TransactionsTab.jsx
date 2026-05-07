@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { History, Search, Calendar } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { paymentService } from '../../services/paymentService';
 import styles from '../../styles/Dashboard.module.css';
 import tableStyles from '../../styles/Table.module.css';
@@ -14,40 +13,16 @@ const TransactionsTab = () => {
     toDate: '',
     method: ''
   });
+  const inFlightRequestKeyRef = useRef(null);
 
-  useEffect(() => {
-    // Test user role first
-    const testUserRole = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        console.log('[TransactionsTab] Token exists:', !!token);
-        console.log('[TransactionsTab] Token preview:', token ? token.substring(0, 20) + '...' : 'N/A');
-        
-        const response = await fetch('http://localhost:5000/api/test-user', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        const data = await response.json();
-        console.log('[TransactionsTab] User role test result:', JSON.stringify(data, null, 2));
-        
-        if (data.user) {
-          console.log('[TransactionsTab] User role:', data.user.role);
-          console.log('[TransactionsTab] Role equals accountant:', data.user.roleEqualsAccountant);
-          console.log('[TransactionsTab] Role lowercase equals:', data.user.roleLowercaseEquals);
-        }
-      } catch (err) {
-        console.error('[TransactionsTab] Error testing user role:', err);
-      }
-    };
-    
-    testUserRole();
-    loadTransactions();
-  }, [filters]);
+  const loadTransactions = useCallback(async () => {
+    const requestKey = JSON.stringify(filters);
+    if (inFlightRequestKeyRef.current === requestKey) {
+      return;
+    }
 
-  const loadTransactions = async () => {
     try {
+      inFlightRequestKeyRef.current = requestKey;
       setLoading(true);
       const filterParams = {};
       if (filters.fromDate) filterParams.fromDate = filters.fromDate;
@@ -81,9 +56,14 @@ const TransactionsTab = () => {
       
       setTransactions([]); // Set empty array on error
     } finally {
+      inFlightRequestKeyRef.current = null;
       setLoading(false);
     }
-  };
+  }, [filters]);
+
+  useEffect(() => {
+    loadTransactions();
+  }, [loadTransactions]);
 
   const totalRevenue = transactions.reduce((sum, t) => sum + (t.totalAmount || 0), 0);
 

@@ -1,0 +1,1 @@
+import{t as e}from"./api-CIPhs8v0.js";var t={getRevenue:async(t={})=>{try{let n=new URLSearchParams;t.fromDate&&n.append(`fromDate`,t.fromDate),t.toDate&&n.append(`toDate`,t.toDate);let r=n.toString();return await e(`/dashboard/revenue${r?`?${r}`:``}`)}catch(e){throw e}}};export{t as dashboardService,t as default};

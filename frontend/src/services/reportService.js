@@ -1,24 +1,26 @@
 import { apiCall } from '../config/api';
 
 export const reportService = {
+  /** Xem nhanh — không lưu DB */
   getOccupancyReport: async (params = {}) => {
-    try {
-      const qs = new URLSearchParams(params).toString();
-      const data = await apiCall(`/reports/occupancy${qs ? `?${qs}` : ''}`);
-      return data;
-    } catch (error) {
-      throw error;
-    }
+    const qs = new URLSearchParams(params).toString();
+    return apiCall(`/reports/occupancy${qs ? `?${qs}` : ''}`);
+  },
+
+  /** Lưu báo cáo vào DB (dùng khi bấm "Tạo báo cáo" trên UI) */
+  saveOccupancyReport: async (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiCall(`/reports/occupancy/save${qs ? `?${qs}` : ''}`, { method: 'POST' });
   },
 
   getRevenueReport: async (params = {}) => {
-    try {
-      const qs = new URLSearchParams(params).toString();
-      const data = await apiCall(`/reports/revenue${qs ? `?${qs}` : ''}`);
-      return data;
-    } catch (error) {
-      throw error;
-    }
+    const qs = new URLSearchParams(params).toString();
+    return apiCall(`/reports/revenue${qs ? `?${qs}` : ''}`);
+  },
+
+  saveRevenueReport: async (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return apiCall(`/reports/revenue/save${qs ? `?${qs}` : ''}`, { method: 'POST' });
   },
 
   listReports: async (filters = {}) => {

@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Plus, Edit, Trash2, Calendar, User, Bed, DollarSign, Filter, X } from 'lucide-react';
 import { useBookings } from '../../hooks/useBookings';
-import { bookingService } from '../../services/bookingService';
 import { guestService } from '../../services/guestService';
 import { roomService } from '../../services/roomService';
 import styles from '../../styles/Table.module.css';
@@ -10,7 +9,7 @@ import badgeStyles from '../../styles/Badge.module.css';
 import dashboardStyles from '../../styles/Dashboard.module.css';
 
 const BookingsTab = () => {
-  const { bookings, isLoading, error, createBooking, updateBooking, cancelBooking, refetch } = useBookings();
+  const { bookings, isLoading, error, createBooking, updateBooking, cancelBooking } = useBookings();
   const [showModal, setShowModal] = useState(false);
   const [editingBookingId, setEditingBookingId] = useState(null);
   const [guests, setGuests] = useState([]);
@@ -52,6 +51,29 @@ const BookingsTab = () => {
     return counts;
   }, [bookings]);
 
+  const loadGuests = useCallback(async () => {
+    try {
+      const data = await guestService.getAllGuests();
+      setGuests(data);
+    } catch (err) {
+      console.error('Error loading guests:', err);
+    }
+  }, []);
+
+  const loadAvailableRooms = useCallback(async () => {
+    if (!newBooking.checkInDate || !newBooking.checkOutDate) return;
+    try {
+      const data = await roomService.getAvailableRooms(
+        newBooking.checkInDate,
+        newBooking.checkOutDate,
+        editingBookingId ? { excludeBookingId: editingBookingId } : {}
+      );
+      setAvailableRooms(data);
+    } catch (err) {
+      console.error('Error loading available rooms:', err);
+    }
+  }, [newBooking.checkInDate, newBooking.checkOutDate, editingBookingId]);
+
   useEffect(() => {
     // Load guests and rooms when modal opens
     if (showModal) {
@@ -60,29 +82,7 @@ const BookingsTab = () => {
         loadAvailableRooms();
       }
     }
-  }, [showModal, newBooking.checkInDate, newBooking.checkOutDate]);
-
-  const loadGuests = async () => {
-    try {
-      const data = await guestService.getAllGuests();
-      setGuests(data);
-    } catch (err) {
-      console.error('Error loading guests:', err);
-    }
-  };
-
-  const loadAvailableRooms = async () => {
-    if (!newBooking.checkInDate || !newBooking.checkOutDate) return;
-    try {
-      const data = await roomService.getAvailableRooms(
-        newBooking.checkInDate,
-        newBooking.checkOutDate
-      );
-      setAvailableRooms(data);
-    } catch (err) {
-      console.error('Error loading available rooms:', err);
-    }
-  };
+  }, [showModal, newBooking.checkInDate, newBooking.checkOutDate, editingBookingId, loadAvailableRooms, loadGuests]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -104,14 +104,21 @@ const BookingsTab = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const bookingData = {
-        ...(useExistingGuest && newBooking.customerId ? { customerId: newBooking.customerId } : {}),
-        ...(!useExistingGuest ? { guestInfo: newBooking.guestInfo } : {}),
-        roomId: newBooking.roomId,
-        checkInDate: newBooking.checkInDate,
-        checkOutDate: newBooking.checkOutDate,
-        numberOfGuests: parseInt(newBooking.numberOfGuests) || 1
-      };
+      const bookingData = editingBookingId
+        ? {
+            roomId: newBooking.roomId,
+            checkInDate: newBooking.checkInDate,
+            checkOutDate: newBooking.checkOutDate,
+            numberOfGuests: parseInt(newBooking.numberOfGuests, 10) || 1,
+          }
+        : {
+            ...(useExistingGuest && newBooking.customerId ? { customerId: newBooking.customerId } : {}),
+            ...(!useExistingGuest ? { guestInfo: newBooking.guestInfo } : {}),
+            roomId: newBooking.roomId,
+            checkInDate: newBooking.checkInDate,
+            checkOutDate: newBooking.checkOutDate,
+            numberOfGuests: parseInt(newBooking.numberOfGuests, 10) || 1,
+          };
 
       if (editingBookingId) {
         await updateBooking(editingBookingId, bookingData);
@@ -339,9 +346,9 @@ const BookingsTab = () => {
                           // populate modal with booking data for edit
                           setEditingBookingId(booking._id);
                           setShowModal(true);
-                          setUseExistingGuest(!!booking.customer);
+                          setUseExistingGuest(!!booking.guest);
                           setNewBooking({
-                            customerId: booking.customer?._id || booking.customer || '',
+                            customerId: booking.guest?._id || booking.guest || '',
                             guestInfo: {
                               fullName: booking.guest?.fullName || '',
                               phoneNumber: booking.guest?.phoneNumber || '',
@@ -382,6 +389,8 @@ const BookingsTab = () => {
 
             <form onSubmit={handleSubmit} className={styles.formContainer}>
               <div className={styles.formGrid}>
+                {!editingBookingId && (
+                  <>
                 <div>
                   <label>
                     <input
@@ -447,6 +456,13 @@ const BookingsTab = () => {
                     </>
                   )}
                 </div>
+                  </>
+                )}
+                {editingBookingId && (
+                  <div style={{ gridColumn: '1 / -1', fontSize: '0.875rem', color: '#6b7280' }}>
+                    Chỉnh sửa: phòng, ngày và số khách. Đổi khách hoặc trạng thái qua quy trình nghiệp vụ khác.
+                  </div>
+                )}
 
                 <div>
                   <label>Ngày check-in</label>

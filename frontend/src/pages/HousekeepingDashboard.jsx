@@ -6,7 +6,6 @@ import NavBar from '../components/NavBar';
 import styles from '../styles/Dashboard.module.css';
 import badgeStyles from '../styles/Badge.module.css';
 import buttonStyles from '../styles/Button.module.css';
-import { apiCall } from '../config/api';
 import { roomService } from '../services/roomService';
 import maintenanceService from '../services/maintenanceService';
 
@@ -27,6 +26,15 @@ const HousekeepingDashboard = ({ onLogout }) => {
   const [newStatus, setNewStatus] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState('cleaning'); // 'cleaning' or 'all'
+  const [statusFilter, setStatusFilter] = useState('all');
+  const quickFilters = [
+    { key: 'all', label: 'Tất cả' },
+    { key: 'dirty', label: 'Cần dọn' },
+    { key: 'cleaning', label: 'Đang dọn' },
+    { key: 'maintenance', label: 'Bảo trì' },
+    { key: 'occupied', label: 'Đang có khách' },
+    { key: 'available', label: 'Sẵn sàng' },
+  ];
 
   // Load stats + danh sách phòng
   const fetchData = async () => {
@@ -166,6 +174,11 @@ const HousekeepingDashboard = ({ onLogout }) => {
   };
 
   const roomsToShow = activeView === 'cleaning' ? cleaningRooms : allRooms;
+  const filteredRoomsToShow = roomsToShow.filter((room) => {
+    if (statusFilter === 'all') return true;
+    const roomStatus = (room.status || room.roomStatus || '').toString().toLowerCase();
+    return roomStatus === statusFilter;
+  });
 
   return (
     <div className={styles.container}>
@@ -211,11 +224,11 @@ const HousekeepingDashboard = ({ onLogout }) => {
         {/* --------------------------------------------------- */}
         {/* 2. ROOM MANAGEMENT */}
         {/* --------------------------------------------------- */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem', flexWrap: 'wrap' }}>
           <h2 className={styles.sectionTitle}>
             {activeView === 'cleaning' ? 'Danh sách phòng cần dọn' : 'Tất cả phòng'}
           </h2>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             <button
               className={`${buttonStyles.base} ${buttonStyles.secondary} ${buttonStyles.sm} ${activeView === 'cleaning' ? buttonStyles.primary : ''}`}
               onClick={() => setActiveView('cleaning')}
@@ -238,13 +251,27 @@ const HousekeepingDashboard = ({ onLogout }) => {
           </div>
         </div>
 
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+          {quickFilters.map((filter) => (
+            <button
+              key={filter.key}
+              className={`${buttonStyles.base} ${buttonStyles.secondary} ${buttonStyles.sm} ${statusFilter === filter.key ? buttonStyles.primary : ''}`}
+              onClick={() => setStatusFilter(filter.key)}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <p>Đang tải dữ liệu...</p>
-        ) : (activeView === 'cleaning' ? cleaningRooms : allRooms).length === 0 ? (
+        ) : roomsToShow.length === 0 ? (
           <p>Hiện không có phòng nào.</p>
+        ) : filteredRoomsToShow.length === 0 ? (
+          <p>Không có phòng nào khớp với bộ lọc trạng thái đã chọn.</p>
         ) : (
           <div className={`${styles.grid} ${styles.gridRooms}`}>
-            {roomsToShow.map((room) => {
+            {filteredRoomsToShow.map((room) => {
               const rawStatus = (room.status || room.roomStatus || '').toString();
               const status = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1);
               const statusKey = rawStatus.toLowerCase();

@@ -2,10 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { RefreshCw, Edit } from 'lucide-react';
 import RoomCard from '../RoomCard';
 import { useRooms } from '../../hooks/useRooms';
-import { roomService } from '../../services/roomService';
 import styles from '../../styles/Dashboard.module.css';
 import buttonStyles from '../../styles/Button.module.css';
-import badgeStyles from '../../styles/Badge.module.css';
 
 const RoomsTab = () => {
   const { rooms, isLoading, error, updateRoomStatus, refetch } = useRooms();

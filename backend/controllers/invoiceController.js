@@ -1,6 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const Invoice = require('../models/invoiceModel');
 const Booking = require('../models/bookingModel');
+const { startOfDay, endOfDay } = require('../utils/dateRange');
 
 /**
  * @desc    Tạo hóa đơn cho một booking (thường được gọi tự động)
@@ -9,25 +10,37 @@ const Booking = require('../models/bookingModel');
  */
 const generateInvoiceForBooking = asyncHandler(async (req, res, next) => {
   const { bookingId } = req.params;
-  
+
   const booking = await Booking.findById(bookingId);
   if (!booking) {
-    return res.status(404).json({ message: 'Không tìm thấy booking'});
+    return res.status(404).json({ message: 'Không tìm thấy booking' });
   }
-  
-  const existingInvoice = await Invoice.findOne({ booking: bookingId });
-  if (existingInvoice) {
+
+  try {
+    const invoice = await Invoice.findOneAndUpdate(
+      { booking: bookingId },
+      {
+        $setOnInsert: {
+          booking: bookingId,
+          totalAmount: booking.totalPrice,
+          issueDate: new Date(),
+          paymentStatus: 'pending',
+        },
+      },
+      { new: true, upsert: true, runValidators: true }
+    );
+
+    const isNew = invoice.createdAt && invoice.updatedAt &&
+      Math.abs(invoice.createdAt - invoice.updatedAt) < 2000; // heuristic tùy chọn
+
+    return res.status(isNew ? 201 : 200).json(invoice);
+  } catch (e) {
+    if (e && e.code === 11000) {
+      const existing = await Invoice.findOne({ booking: bookingId });
       return res.status(400).json({ message: 'Hóa đơn đã tồn tại cho booking này' });
+    }
+    throw e;
   }
-
-  const newInvoice = await Invoice.create({
-    booking: bookingId,
-    totalAmount: booking.totalPrice, // Lấy từ bookingModel
-    issueDate: Date.now(),
-    paymentStatus: 'pending' // Mặc định từ invoiceModel
-  });
-
-  res.status(201).json(newInvoice);
 });
 
 /**
@@ -37,19 +50,25 @@ const generateInvoiceForBooking = asyncHandler(async (req, res, next) => {
  */
 const getAllInvoices = asyncHandler(async (req, res, next) => {
   const filter = {};
+  if (req.query.status) {
+    filter.paymentStatus = req.query.status;
+  }
   if (req.query.fromDate || req.query.toDate) {
     filter.issueDate = {};
-    if (req.query.fromDate) filter.issueDate.$gte = new Date(req.query.fromDate);
-    if (req.query.toDate) filter.issueDate.$lte = new Date(req.query.toDate);
+    if (req.query.fromDate) filter.issueDate.$gte = startOfDay(req.query.fromDate);
+    if (req.query.toDate) filter.issueDate.$lte = endOfDay(req.query.toDate);
   }
   
   const invoices = await Invoice.find(filter)
-    .populate({
-      path: 'booking',
-      select: 'guest room checkInDate checkOutDate',
-      populate: { path: 'guest', select: 'fullName' }
-    })
-    .sort('-issueDate');
+  .populate({
+    path: 'booking',
+    select: 'guest room checkInDate checkOutDate',
+    populate: [
+      { path: 'guest', select: 'fullName' },
+      { path: 'room', select: 'roomNumber' },
+    ],
+  })
+  .sort('-issueDate');
 
  res.status(200).json(invoices);
 });

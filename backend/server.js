@@ -1,8 +1,10 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db.js');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
+const { startBookingReminderScheduler } = require('./services/bookingReminderService');
 
 // Import 9 routes cũ
 const authRoutes = require('./routes/api/authRoutes');
@@ -25,23 +27,63 @@ connectDB();
 
 const app = express();
 
+app.disable('x-powered-by');
+
+if (process.env.TRUST_PROXY === 'true') {
+  app.set('trust proxy', 1);
+}
+
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
+
 // CORS configuration
 if (!process.env.FRONTEND_URL) {
   console.error('❌ FRONTEND_URL không được cấu hình trong .env');
   process.exit(1);
 }
 
+const allowedOrigins = process.env.FRONTEND_URL.split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL, // ← Bỏ fallback
+  origin(origin, callback) {
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    const corsError = new Error('Not allowed by CORS');
+    corsError.status = 403;
+    return callback(corsError);
+  },
   credentials: true
 }));
 
-app.use(express.json());
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ ok: true });
+});
 
-const { apiLimiter } = require('./middleware/rateLimiters');
+app.use(express.json({ limit: '100kb' }));
 
-// Áp dụng rate limiting cho tất cả API
-app.use('/api/', apiLimiter);
+const {
+  authLimiter,
+  writeLimiter,
+  readLimiter,
+  lightReadLimiter
+} = require('./middleware/rateLimiters');
+
+// Rate limiting theo mức độ endpoint/method
+app.use('/api/auth', authLimiter);
+app.use('/api/dashboard', lightReadLimiter);
+app.use('/api/room-types', lightReadLimiter);
+app.use('/api/transactions', lightReadLimiter);
+app.use('/api', writeLimiter);
+app.use('/api', readLimiter);
 
 // --- Định nghĩa các API Routes ---
 
@@ -59,8 +101,8 @@ app.use('/api/dashboard', dashboardRoutes); // -> /api/dashboard/revenue
 
 // 2. Các routes MỚI không có tiền tố (gắn thẳng vào /api)
 // (Vì các route này đã tự định nghĩa đường dẫn đầy đủ)
-app.use('/api', checkinRoutes); // -> /api/checkin, /api/checkout
 app.use('/api', paymentRoutes); // -> /api/payments, /api/transactions
+app.use('/api', checkinRoutes); // -> /api/checkin, /api/checkout
 
 // ------------------------------------
 
@@ -69,4 +111,9 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  if (process.env.NODE_ENV !== 'test') {
+    startBookingReminderScheduler();
+  }
+});

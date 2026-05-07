@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Search } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Plus, Edit } from 'lucide-react';
 import { roomService } from '../../services/roomService';
 import { roomTypeService } from '../../services/roomTypeService';
 import styles from '../../styles/Dashboard.module.css';
 import tableStyles from '../../styles/Table.module.css';
-import badgeStyles from '../../styles/Badge.module.css';
 import buttonStyles from '../../styles/Button.module.css';
 
 const RoomsManagementTab = () => {
@@ -21,19 +20,7 @@ const RoomsManagementTab = () => {
     status: 'available'
   });
 
-  useEffect(() => {
-    loadRooms();
-    loadRoomTypes();
-    
-    // Auto-refresh mỗi 30 giây để đồng bộ trạng thái
-    const interval = setInterval(() => {
-      loadRooms();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [statusFilter]);
-
-  const loadRooms = async () => {
+  const loadRooms = useCallback(async () => {
     try {
       setLoading(true);
       const filters = {};
@@ -46,16 +33,28 @@ const RoomsManagementTab = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter]);
 
-  const loadRoomTypes = async () => {
+  const loadRoomTypes = useCallback(async () => {
     try {
       const data = await roomTypeService.getAllRoomTypes();
       setRoomTypes(Array.isArray(data) ? data : (data.data || []));
     } catch (err) {
       console.error('Error loading room types:', err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadRooms();
+    loadRoomTypes();
+
+    // Auto-refresh mỗi 30 giây để đồng bộ trạng thái
+    const interval = setInterval(() => {
+      loadRooms();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [loadRooms, loadRoomTypes]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -7,8 +7,8 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 # Địa chỉ API khi chạy bằng Docker (browser gọi tới backend qua localhost:5000)
-ARG REACT_APP_API_URL=http://localhost:5000/api
-ENV REACT_APP_API_URL=$REACT_APP_API_URL
+ARG VITE_API_URL=http://localhost:5000/api
+ENV VITE_API_URL=$VITE_API_URL
 
 COPY package.json package-lock.json* ./
 RUN npm ci 2>/dev/null || npm install
@@ -22,8 +22,8 @@ FROM nginx:alpine
 # Copy file cấu hình Nginx (SPA: mọi route trả về index.html)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy thư mục build từ giai đoạn 1
-COPY --from=build /app/build /usr/share/nginx/html
+# Copy thư mục dist từ giai đoạn 1
+COPY --from=build /app/dist /usr/share/nginx/html
 
 EXPOSE 80
 

@@ -40,6 +40,16 @@ const bookingSchema = new mongoose.Schema({
         type: String,
         enum: ['pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled'],
         default: 'pending'
+    },
+    reminders: {
+        checkInReminderSentAt: {
+            type: Date,
+            default: null
+        },
+        checkOutReminderSentAt: {
+            type: Date,
+            default: null
+        }
     }
 }, { timestamps: true });
 
@@ -52,5 +62,7 @@ bookingSchema.pre('validate', function(next) {
 
 bookingSchema.index({ room: 1, checkInDate: 1, checkOutDate: 1 });
 bookingSchema.index({ status: 1 });
+bookingSchema.index({ status: 1, checkInDate: 1, 'reminders.checkInReminderSentAt': 1 });
+bookingSchema.index({ status: 1, checkOutDate: 1, 'reminders.checkOutReminderSentAt': 1 });
 
 module.exports = mongoose.model('Booking', bookingSchema);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserCheck, Bed, Users, DollarSign, Calendar, CheckCircle, X, FileText, Home, Settings } from 'lucide-react';
+import { UserCheck, Bed, Users, DollarSign, Calendar, X, FileText, Home, Settings } from 'lucide-react';
 import NavBar from '../components/NavBar';
 import StatCard from '../components/StatCard';
 import styles from '../styles/Dashboard.module.css';
