@@ -114,6 +114,7 @@ GMAIL_SENDER_EMAIL=
 ```
 
 > Lưu ý bảo mật: không commit giá trị secret thật lên GitHub.
+> `JWT_SECRET` nên có tối thiểu 16 ký tự.
 
 ### 2) Frontend `frontend/.env` (tùy chọn)
 
@@ -158,6 +159,9 @@ Frontend chạy tại: `http://localhost:5173`
 ## Chạy bằng Docker Compose (profiles dev/prod)
 
 Từ thư mục gốc project:
+
+> Quan trọng: file `docker-compose.yml` đọc biến như `JWT_SECRET`, `GOOGLE_CLIENT_ID`... từ **`.env` ở thư mục gốc project** (không phải `backend/.env`).
+> Hãy tạo `.env` ở root trước khi chạy compose.
 
 ```bash
 # Production profile (Nginx + image optimized)
@@ -236,7 +240,7 @@ Bạn có thể import `Postman_Collection.json` để test API nhanh.
 
 ### Backend
 - `npm start`: chạy server
-- `npm test -- --watchAll=false`: chạy test
+- `npm test`: chạy test
 - `npm run seed:all`: seed toàn bộ
 - `npm run gmail:token`: lấy refresh token Gmail
 - `npm run check-role`: kiểm tra role user

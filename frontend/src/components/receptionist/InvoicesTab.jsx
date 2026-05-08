@@ -158,7 +158,10 @@ const InvoicesTab = () => {
         <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Tổng doanh thu</div>
           <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#22c55e' }}>
-            ₫{invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0).toLocaleString()}
+            ₫{invoices
+              .filter(inv => normalizePaymentStatus(inv.paymentStatus) === 'paid')
+              .reduce((sum, inv) => sum + (inv.totalAmount || 0), 0)
+              .toLocaleString()}
           </div>
         </div>
       </div>

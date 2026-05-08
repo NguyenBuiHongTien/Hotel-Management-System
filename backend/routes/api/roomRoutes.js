@@ -1,6 +1,6 @@
 // routes/api/roomRoutes.js
 
-const { createRoomRules } = require('../../validators/roomValidators');
+const { createRoomRules, updateRoomRules, updateRoomStatusRules } = require('../../validators/roomValidators');
 const { validate } = require('../../middleware/validationMiddleware');
 
 
@@ -40,10 +40,10 @@ router.get('/status/realtime', protect, authorize('receptionist', 'manager'), ge
 router.get('/:roomId', protect, getRoomById);
 
 // Route cập nhật trạng thái (Nhiều vai trò)
-router.put('/:roomId/status', protect, authorize('receptionist', 'housekeeper', 'maintenance'), updateRoomStatus);
+router.put('/:roomId/status', protect, authorize('manager', 'receptionist', 'housekeeper', 'maintenance'), updateRoomStatusRules, validate, updateRoomStatus);
 
 // Routes chỉ cho Quản lý
 router.post('/', protect, authorize('manager'), createRoomRules, validate, createRoom);
-router.put('/:roomId', protect, authorize('manager'), updateRoomInfo); // Cập nhật thông tin
+router.put('/:roomId', protect, authorize('manager'), updateRoomRules, validate, updateRoomInfo); // Cập nhật thông tin
 
 module.exports = router;

@@ -1,3 +1,5 @@
+const { body } = require('express-validator');
+
 const createInvoiceRules = [
   body('totalAmount')
     .notEmpty().withMessage('Tổng tiền là bắt buộc')

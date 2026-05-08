@@ -12,7 +12,8 @@
     "seed:rooms": "node scripts/seeders/seedRunner.js rooms",
     "check-role": "node scripts/checkUserRole.js",
     "fix-accountant": "node scripts/fixAccountantRole.js",
-    "gmail:token": "node scripts/getEmailRefreshToken.js"
+    "gmail:token": "node scripts/getEmailRefreshToken.js",
+    "env:init": "node scripts/init-env.js"
   },
   "keywords": [],
   "author": "",

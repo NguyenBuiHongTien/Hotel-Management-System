@@ -19,4 +19,23 @@ const createRoomRules = [
     .isIn(['available', 'occupied', 'dirty', 'cleaning', 'maintenance']).withMessage('Trạng thái không hợp lệ')
 ];
 
-module.exports = { createRoomRules };
+const updateRoomRules = [
+  body('roomNumber')
+    .optional()
+    .isString().withMessage('Số phòng không hợp lệ')
+    .trim(),
+  body('roomTypeId')
+    .optional()
+    .isMongoId().withMessage('ID loại phòng không đúng format'),
+  body('floor')
+    .optional()
+    .isString().withMessage('Tầng không đúng format'),
+];
+
+const updateRoomStatusRules = [
+  body('status')
+    .notEmpty().withMessage('Trạng thái là bắt buộc')
+    .isIn(['available', 'occupied', 'dirty', 'cleaning', 'maintenance']).withMessage('Trạng thái không hợp lệ')
+];
+
+module.exports = { createRoomRules, updateRoomRules, updateRoomStatusRules };

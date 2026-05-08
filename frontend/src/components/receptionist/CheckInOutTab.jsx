@@ -16,17 +16,26 @@ const CheckInOutTab = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
-  // Get today's date in YYYY-MM-DD format
-  const today = new Date().toISOString().split('T')[0];
+  const toLocalDateKey = (input) => {
+    const d = new Date(input);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const today = toLocalDateKey(new Date());
 
   // Auto-refresh mỗi 30 giây để đồng bộ
   useEffect(() => {
     const interval = setInterval(() => {
-      refetch();
+      if (!showDetailModal && !isProcessing) {
+        refetch();
+      }
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [refetch]);
+  }, [refetch, showDetailModal, isProcessing]);
 
   // Filter bookings for check-in (confirmed status)
   const getCheckInBookings = () => {
@@ -35,12 +44,12 @@ const CheckInOutTab = () => {
     // Date filter
     if (dateFilter === 'today') {
       filtered = filtered.filter(booking => {
-        const checkInDate = new Date(booking.checkInDate).toISOString().split('T')[0];
+        const checkInDate = toLocalDateKey(booking.checkInDate);
         return checkInDate === today;
       });
     } else if (dateFilter === 'upcoming') {
       filtered = filtered.filter(booking => {
-        const checkInDate = new Date(booking.checkInDate).toISOString().split('T')[0];
+        const checkInDate = toLocalDateKey(booking.checkInDate);
         return checkInDate >= today;
       });
     }
@@ -65,12 +74,12 @@ const CheckInOutTab = () => {
     // Date filter
     if (dateFilter === 'today') {
       filtered = filtered.filter(booking => {
-        const checkOutDate = new Date(booking.checkOutDate).toISOString().split('T')[0];
+        const checkOutDate = toLocalDateKey(booking.checkOutDate);
         return checkOutDate === today;
       });
     } else if (dateFilter === 'upcoming') {
       filtered = filtered.filter(booking => {
-        const checkOutDate = new Date(booking.checkOutDate).toISOString().split('T')[0];
+        const checkOutDate = toLocalDateKey(booking.checkOutDate);
         return checkOutDate >= today;
       });
     }
@@ -121,7 +130,8 @@ const CheckInOutTab = () => {
       setIsProcessing(true);
       try {
         const result = await bookingService.checkOut(bookingId);
-        alert(`Check-out thành công!\nHóa đơn đã được tạo.\nTổng tiền: ₫${Number(result.invoice?.totalAmount || booking.totalPrice || 0).toLocaleString()}`);
+        const amount = result.data?.invoice?.totalAmount ?? booking.totalPrice ?? 0;
+        alert(`Check-out thành công!\nHóa đơn đã được tạo.\nTổng tiền: ₫${Number(amount).toLocaleString()}`);
         await refetch();
       } catch (err) {
         alert('Lỗi: ' + (err.message || 'Không thể check-out'));

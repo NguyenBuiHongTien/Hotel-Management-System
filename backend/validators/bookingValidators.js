@@ -47,4 +47,28 @@ const createBookingRules = [
     .isEmail().withMessage('Email không hợp lệ')
 ];
 
-module.exports = { createBookingRules };
+const updateBookingRules = [
+  body('roomId')
+    .optional()
+    .isMongoId().withMessage('Room ID không hợp lệ'),
+  body('checkInDate')
+    .optional()
+    .isISO8601().withMessage('Ngày check-in không đúng format'),
+  body('checkOutDate')
+    .optional()
+    .isISO8601().withMessage('Ngày check-out không đúng format'),
+  body('checkOutDate')
+    .optional()
+    .custom((value, { req }) => {
+      if (!req.body.checkInDate || !value) return true;
+      if (new Date(value) <= new Date(req.body.checkInDate)) {
+        throw new Error('Ngày check-out phải sau ngày check-in');
+      }
+      return true;
+    }),
+  body('numberOfGuests')
+    .optional()
+    .isInt({ min: 1, max: 10 }).withMessage('Số khách phải từ 1-10'),
+];
+
+module.exports = { createBookingRules, updateBookingRules };

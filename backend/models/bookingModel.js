@@ -55,9 +55,9 @@ const bookingSchema = new mongoose.Schema({
 
 bookingSchema.pre('validate', function(next) {
   if (this.checkOutDate <= this.checkInDate) {
-    next(new Error('Check-out date must be after check-in date'));
+    return next(new Error('Check-out date must be after check-in date'));
   }
-  next();
+  return next();
 });
 
 bookingSchema.index({ room: 1, checkInDate: 1, checkOutDate: 1 });

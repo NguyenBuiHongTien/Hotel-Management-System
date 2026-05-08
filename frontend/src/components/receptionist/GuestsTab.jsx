@@ -23,7 +23,12 @@ const GuestsTab = () => {
       setLoading(true);
       const filters = {};
       if (searchTerm) {
-        filters.name = searchTerm;
+        const term = searchTerm.trim();
+        if (/^\d{3,}$/.test(term)) {
+          filters.phoneNumber = term;
+        } else {
+          filters.name = term;
+        }
       }
       const data = await guestService.getAllGuests(filters);
       setGuests(Array.isArray(data) ? data : (data.data || []));

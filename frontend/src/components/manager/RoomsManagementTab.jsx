@@ -90,16 +90,6 @@ const RoomsManagementTab = () => {
     setShowModal(true);
   };
 
-  const handleUpdateStatus = async (roomId, newStatus) => {
-    try {
-      await roomService.updateRoomStatus(roomId, newStatus);
-      alert(`Đã cập nhật trạng thái phòng thành "${getStatusLabel(newStatus)}".`);
-      await loadRooms(); // Refresh để đồng bộ
-    } catch (err) {
-      alert('Lỗi: ' + (err.message || 'Không thể cập nhật trạng thái'));
-    }
-  };
-
   const getStatusLabel = (status) => {
     const labels = {
       'available': 'Sẵn sàng',
@@ -172,24 +162,7 @@ const RoomsManagementTab = () => {
                   <td className={tableStyles.td}>{room.roomNumber}</td>
                   <td className={tableStyles.td}>{room.floor}</td>
                   <td className={tableStyles.td}>{room.roomType?.typeName || 'N/A'}</td>
-                  <td className={tableStyles.td}>
-                    <select
-                      value={room.status}
-                      onChange={(e) => handleUpdateStatus(room._id, e.target.value)}
-                      style={{
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '0.25rem',
-                        border: '1px solid #d1d5db',
-                        fontSize: '0.875rem'
-                      }}
-                    >
-                      <option value="available">Trống</option>
-                      <option value="occupied">Đã thuê</option>
-                      <option value="dirty">Cần dọn</option>
-                      <option value="cleaning">Đang dọn</option>
-                      <option value="maintenance">Bảo trì</option>
-                    </select>
-                  </td>
+                  <td className={tableStyles.td}>{getStatusLabel(room.status)}</td>
                   <td className={tableStyles.td}>
                     <button
                       className={tableStyles.actionBtn}

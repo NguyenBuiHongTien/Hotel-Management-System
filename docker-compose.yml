@@ -35,7 +35,7 @@ services:
       MONGODB_URL: mongodb://mongodb:27017/hotel_management
       # CORS: cho phép frontend (trình duyệt gọi API)
       FRONTEND_URL: http://localhost:3000
-      JWT_SECRET: ${JWT_SECRET:-jwt-secret-doi-trong-env-file}
+      JWT_SECRET: ${JWT_SECRET}
       # Gmail API (tùy chọn — thêm vào file .env ở root project)
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
@@ -78,7 +78,7 @@ services:
       PORT: 5000
       MONGODB_URL: mongodb://mongodb:27017/hotel_management
       FRONTEND_URL: http://localhost:5173
-      JWT_SECRET: ${JWT_SECRET:-jwt-secret-doi-trong-env-file}
+      JWT_SECRET: ${JWT_SECRET}
       TRUST_PROXY: "false"
     volumes:
       - ./backend:/app

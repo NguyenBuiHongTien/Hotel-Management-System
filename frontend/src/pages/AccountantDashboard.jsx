@@ -35,7 +35,7 @@ const AccountantDashboard = ({ onLogout }) => {
   const isPaid = (inv) => (inv.paymentStatus || '').toLowerCase() === 'paid';
   const totalToday = invoices.reduce((sum, inv) => {
     if (!isPaid(inv)) return sum;
-    const d = new Date(inv.issueDate || inv.createdAt);
+    const d = new Date(inv.updatedAt || inv.issueDate || inv.createdAt);
     const now = new Date();
     if (d.toDateString() === now.toDateString()) return sum + (inv.totalAmount || 0);
     return sum;

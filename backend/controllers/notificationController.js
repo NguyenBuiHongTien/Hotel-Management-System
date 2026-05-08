@@ -140,19 +140,39 @@ async function getGmailClient() {
 const sendEmail = async ({ to, subject, text, html, logContext }) => {
   const prefix = logContext ? `[email ${logContext}] ` : '';
 
-  const from = process.env.GMAIL_SENDER_EMAIL;
-  if (!from) {
-    console.warn(`${prefix}Thiếu GMAIL_SENDER_EMAIL trong .env — bỏ qua gửi mail`);
-    return { ok: false, skipped: true, reason: 'missing_sender_email' };
-  }
-
   if (!isValidEmail(to)) {
     console.warn(`${prefix}Email người nhận không hợp lệ: ${to || '(empty)'}`);
     return { ok: false, skipped: true, reason: 'invalid_recipient_email' };
   }
 
+  let gmail;
   try {
-    const gmail = await getGmailClient();
+    gmail = await getGmailClient();
+  } catch (err) {
+    console.warn(`${prefix}${err.message} — bỏ qua gửi mail`);
+    return { ok: false, skipped: true, reason: 'missing_oauth_config' };
+  }
+
+  let from = String(process.env.GMAIL_SENDER_EMAIL || '').trim();
+  if (!from) {
+    try {
+      const profile = await gmail.users.getProfile({ userId: 'me' });
+      from = String(profile.data.emailAddress || '').trim();
+    } catch (err) {
+      const msg = err.response?.data ? JSON.stringify(err.response.data) : err.message;
+      console.warn(`${prefix}Không lấy được địa chỉ gửi (profile Gmail): ${msg}`);
+      return { ok: false, skipped: true, reason: 'missing_sender_email' };
+    }
+  }
+
+  if (!from || !isValidEmail(from)) {
+    console.warn(
+      `${prefix}Thiếu địa chỉ gửi hợp lệ — đặt GMAIL_SENDER_EMAIL trong .env hoặc kiểm tra OAuth`
+    );
+    return { ok: false, skipped: true, reason: 'missing_sender_email' };
+  }
+
+  try {
     const raw = buildRawMessage({ from, to, subject, text, html });
     await gmail.users.messages.send({
       userId: 'me',

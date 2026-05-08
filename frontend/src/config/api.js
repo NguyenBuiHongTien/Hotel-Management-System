@@ -2,10 +2,17 @@
 const API_BASE_URL =
   (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ||
   'http://localhost:5000/api';
+const IS_DEV =
+  typeof import.meta !== 'undefined' && import.meta.env && Boolean(import.meta.env.DEV);
 
 // Helper function to get auth token
 const getToken = () => {
   return localStorage.getItem('token');
+};
+
+const clearAuthState = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
 };
 
 // Helper function to make API calls
@@ -22,7 +29,9 @@ const apiCall = async (endpoint, options = {}) => {
   };
 
   try {
-    console.log(`[API_CALL] ${options.method || 'GET'} ${API_BASE_URL}${endpoint}`);
+    if (IS_DEV) {
+      console.log(`[API_CALL] ${options.method || 'GET'} ${API_BASE_URL}${endpoint}`);
+    }
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
     
     let data;
@@ -34,11 +43,19 @@ const apiCall = async (endpoint, options = {}) => {
       throw new Error(text || `HTTP error! status: ${response.status}`);
     }
 
-    console.log(`[API_CALL] Response status: ${response.status}`, data);
+    if (IS_DEV) {
+      console.log(`[API_CALL] Response status: ${response.status}`);
+    }
 
     if (!response.ok) {
       const errorMsg = data.message || data.error || `HTTP error! status: ${response.status}`;
-      console.error(`[API_CALL] Error ${response.status}:`, errorMsg);
+      if (IS_DEV) {
+        console.error(`[API_CALL] Error ${response.status}:`, errorMsg);
+      }
+      if (response.status === 401) {
+        clearAuthState();
+        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+      }
       throw new Error(errorMsg);
     }
 

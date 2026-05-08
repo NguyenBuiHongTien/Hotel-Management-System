@@ -29,18 +29,11 @@ const TransactionsTab = () => {
       if (filters.toDate) filterParams.toDate = filters.toDate;
       if (filters.method) filterParams.method = filters.method;
 
-      console.log('[TransactionsTab] Loading transactions with filters:', filterParams);
       const data = await paymentService.getTransactionHistory(filterParams);
-      console.log('[TransactionsTab] Received data:', data);
       
       const transactionsList = Array.isArray(data) ? data : (data.data || []);
       setTransactions(transactionsList);
-      
-      if (transactionsList.length === 0) {
-        console.log('[TransactionsTab] No transactions found');
-      }
     } catch (err) {
-      console.error('[TransactionsTab] Error loading transactions:', err);
       const errorMessage = err.message || 'Không thể tải lịch sử giao dịch';
       
       // Hiển thị thông báo lỗi chi tiết hơn
@@ -48,8 +41,6 @@ const TransactionsTab = () => {
         alert(`Lỗi quyền truy cập: ${errorMessage}\n\nVui lòng đăng nhập lại với tài khoản accountant.`);
       } else if (errorMessage.includes('401') || errorMessage.includes('token')) {
         alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-        // Có thể redirect về login page
-        window.location.href = '/login';
       } else {
         alert(`Không thể tải lịch sử giao dịch: ${errorMessage}`);
       }

@@ -22,7 +22,8 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new Error('Vui lòng cung cấp email và mật khẩu');
     }
 
-    const user = await User.findOne({ email }).select('+password');
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
 
     if (user && (await user.matchPassword(password))) {
         res.json({

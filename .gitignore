@@ -25,5 +25,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 frontend/build/
+frontend/dist/
 .env.docker.example
 backend/.env
+compose.resolved.yml
+compose.dev.resolved.yml

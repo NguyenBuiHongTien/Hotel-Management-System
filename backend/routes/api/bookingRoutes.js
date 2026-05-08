@@ -1,5 +1,5 @@
 // routes/api/bookingRoutes.js
-const { createBookingRules } = require('../../validators/bookingValidators');
+const { createBookingRules, updateBookingRules } = require('../../validators/bookingValidators');
 const { validate } = require('../../middleware/validationMiddleware');
 
 const express = require('express');
@@ -24,7 +24,7 @@ router.route('/')
 
 router.route('/:bookingId')
     .get(protect, authorize(...R_M_A), getBookingById)
-    .put(protect, authorize(...R_M), updateBooking);
+    .put(protect, authorize(...R_M), updateBookingRules, validate, updateBooking);
 
 router.post('/:bookingId/cancel', protect, authorize(...R_M), cancelBooking);
 

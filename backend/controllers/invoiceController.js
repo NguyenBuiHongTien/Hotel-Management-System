@@ -53,6 +53,9 @@ const getAllInvoices = asyncHandler(async (req, res, next) => {
   if (req.query.status) {
     filter.paymentStatus = req.query.status;
   }
+  if (req.query.bookingId) {
+    filter.booking = req.query.bookingId;
+  }
   if (req.query.fromDate || req.query.toDate) {
     filter.issueDate = {};
     if (req.query.fromDate) filter.issueDate.$gte = startOfDay(req.query.fromDate);

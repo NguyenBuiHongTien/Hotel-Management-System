@@ -8,6 +8,7 @@ import MaintenanceDashboard from './pages/MaintenanceDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import { normalizeRole } from './services/authService';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -20,7 +21,9 @@ function App() {
         const userData = JSON.parse(storedUser);
         // Validate user data has required fields
         if (userData && userData.role) {
-          setCurrentUser(userData);
+          const normalizedUser = { ...userData, role: normalizeRole(userData.role) };
+          localStorage.setItem('user', JSON.stringify(normalizedUser));
+          setCurrentUser(normalizedUser);
         } else {
           // Invalid user data, clear it
           console.warn('Invalid user data in localStorage, clearing...');
@@ -33,10 +36,18 @@ function App() {
         localStorage.removeItem('token');
       }
     }
+    const onUnauthorized = () => {
+      setCurrentUser(null);
+    };
+    window.addEventListener('auth:unauthorized', onUnauthorized);
+
+    return () => {
+      window.removeEventListener('auth:unauthorized', onUnauthorized);
+    };
   }, []);
 
   const handleLogin = (user) => {
-    setCurrentUser(user);
+    setCurrentUser({ ...user, role: normalizeRole(user?.role) });
   };
 
   const handleLogout = () => {

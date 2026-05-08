@@ -1,5 +1,18 @@
 import { apiCall } from '../config/api';
 
+const ROLE_ALIASES = {
+  accounttant: 'accountant',
+};
+
+const normalizeRole = (role) => {
+  const normalized = String(role || '')
+    .normalize('NFKC')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .trim()
+    .toLowerCase();
+  return ROLE_ALIASES[normalized] || normalized;
+};
+
 export const authService = {
   login: async (email, password) => {
     try {
@@ -10,12 +23,13 @@ export const authService = {
 
       // Store token and user data
       if (response.token) {
+        const normalizedRole = normalizeRole(response.role);
         localStorage.setItem('token', response.token);
         localStorage.setItem('user', JSON.stringify({
           _id: response._id,
           name: response.name,
           email: response.email,
-          role: response.role,
+          role: normalizedRole,
         }));
       }
 
@@ -25,7 +39,7 @@ export const authService = {
           _id: response._id,
           name: response.name,
           email: response.email,
-          role: response.role,
+          role: normalizeRole(response.role),
         },
         message: 'Đăng nhập thành công',
       };
@@ -67,3 +81,5 @@ export const authService = {
     return true;
   },
 };
+
+export { normalizeRole };

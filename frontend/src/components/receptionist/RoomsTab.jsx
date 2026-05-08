@@ -52,7 +52,7 @@ const RoomsTab = () => {
 
   const handleOpenStatusModal = (room) => {
     setSelectedRoom(room);
-    setNewStatus(room.status || '');
+    setNewStatus('');
     setShowStatusModal(true);
   };
 
@@ -173,11 +173,10 @@ const RoomsTab = () => {
                   fontSize: '0.875rem'
                 }}
               >
-                <option value="available">Sẵn sàng</option>
+                <option value="">Chọn trạng thái</option>
                 <option value="dirty">Cần dọn</option>
                 <option value="cleaning">Đang dọn</option>
                 <option value="maintenance">Bảo trì</option>
-                <option value="occupied">Đang có khách</option>
               </select>
             </div>
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>

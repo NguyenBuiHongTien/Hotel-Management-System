@@ -9,6 +9,8 @@ export const bookingService = {
       if (filters.roomId) queryParams.append('roomId', filters.roomId);
       if (filters.fromDate) queryParams.append('fromDate', filters.fromDate);
       if (filters.toDate) queryParams.append('toDate', filters.toDate);
+      if (filters.page) queryParams.append('page', String(filters.page));
+      queryParams.append('limit', String(filters.limit || 1000));
 
       const queryString = queryParams.toString();
       const endpoint = `/bookings${queryString ? `?${queryString}` : ''}`;

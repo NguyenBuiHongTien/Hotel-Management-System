@@ -113,16 +113,35 @@ const updateRoomStatus = asyncHandler(async (req, res) => {
     throw new Error('Trạng thái không hợp lệ');
   }
   
-  const room = await Room.findByIdAndUpdate(
-    req.params.roomId, 
-    { status: status },
-    { new: true, runValidators: true }
-  ).populate('roomType');
+  const room = await Room.findById(req.params.roomId).populate('roomType');
 
   if (!room) {
     res.status(404);
     throw new Error('Không tìm thấy phòng');
   }
+
+  const role = (req.user?.role || '').toString().trim().toLowerCase();
+  const allowedForOps = ['dirty', 'cleaning', 'maintenance'];
+
+  // occupied chỉ được set qua luồng check-in để đồng bộ với booking.
+  if (status === 'occupied') {
+    res.status(403);
+    throw new Error('Trạng thái occupied chỉ được cập nhật qua nghiệp vụ check-in');
+  }
+
+  // available chỉ nên được housekeeping xác nhận sau khi hoàn tất dọn phòng.
+  if (status === 'available' && role !== 'housekeeper') {
+    res.status(403);
+    throw new Error('Chỉ bộ phận buồng phòng mới có thể chuyển phòng sang trạng thái available');
+  }
+
+  if (status !== 'available' && !allowedForOps.includes(status)) {
+    res.status(403);
+    throw new Error('Chỉ được cập nhật các trạng thái vận hành: dirty, cleaning, maintenance');
+  }
+
+  room.status = status;
+  await room.save();
   res.json(room);
 });
 
@@ -140,7 +159,14 @@ const searchAvailableRooms = asyncHandler(async (req, res) => {
   }
   const checkIn = new Date(checkInDate);
   const checkOut = new Date(checkOutDate);
-  
+  if (Number.isNaN(checkIn.getTime()) || Number.isNaN(checkOut.getTime())) {
+    res.status(400);
+    throw new Error('Ngày check-in/check-out không hợp lệ');
+  }
+  if (checkOut <= checkIn) {
+    res.status(400);
+    throw new Error('Ngày check-out phải sau ngày check-in');
+  }
 
   // 1. Tìm các phòng đã bị đặt trong khoảng ngày đó
   const conflictFilter = {

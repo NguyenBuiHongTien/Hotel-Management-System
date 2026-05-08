@@ -1,7 +1,9 @@
 const asyncHandler = require('express-async-handler');
 const RoomType = require('../models/roomTypeModel');
 const Room = require('../models/roomModel');
-const { getCache, setCache } = require('../services/cacheService');
+const { getCache, setCache, deleteCache } = require('../services/cacheService');
+
+const ROOM_TYPES_CACHE_KEY = 'roomTypes:all';
 
 /**
  * @desc    Tạo loại phòng mới
@@ -24,6 +26,7 @@ const createRoomType = asyncHandler(async (req, res) => {
     capacity,
     amenities
   });
+  deleteCache(ROOM_TYPES_CACHE_KEY);
   res.status(201).json(type);
 });
 
@@ -33,7 +36,7 @@ const createRoomType = asyncHandler(async (req, res) => {
  * @access  Private/Manager
  */
 const getAllRoomTypes = asyncHandler(async (req, res) => {
-  const cacheKey = 'roomTypes:all';
+  const cacheKey = ROOM_TYPES_CACHE_KEY;
   
   // Kiểm tra cache
   const cached = getCache(cacheKey);
@@ -84,6 +87,7 @@ const updateRoomType = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error('Không tìm thấy loại phòng');
     }
+    deleteCache(ROOM_TYPES_CACHE_KEY);
     res.json(roomType);
 });
 
@@ -106,6 +110,7 @@ const deleteRoomType = asyncHandler(async (req, res) => {
   }
 
   await RoomType.deleteOne({ _id: roomType._id });
+  deleteCache(ROOM_TYPES_CACHE_KEY);
   res.json({ message: 'Đã xóa loại phòng' });
 });
 

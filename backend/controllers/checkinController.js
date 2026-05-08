@@ -19,12 +19,10 @@ const checkIn = asyncHandler(async (req, res) => {
   try {
     const booking = await Booking.findById(bookingId).session(session);
     if (!booking) {
-      await session.abortTransaction();
       res.status(404);
       throw new Error('Không tìm thấy booking');
     }
     if (booking.status !== 'confirmed') {
-      await session.abortTransaction();
       res.status(400);
       throw new Error(`Booking đang ở trạng thái '${booking.status}', không thể check-in`);
     }
@@ -36,17 +34,22 @@ const checkIn = asyncHandler(async (req, res) => {
 
     await session.commitTransaction();
 
-    const bookingForEmail = await Booking.findById(booking._id).populate([
-      { path: 'guest' },
-      { path: 'room', populate: { path: 'roomType' } },
-    ]);
     let emailResult = { sent: false, reason: 'booking_not_found_after_checkin' };
-    if (bookingForEmail) {
-      emailResult = await sendCheckInEmail(bookingForEmail);
-    } else {
-      console.warn(
-        `[email] Không tải lại booking sau check-in, bookingId=${booking._id}`
-      );
+    try {
+      const bookingForEmail = await Booking.findById(booking._id).populate([
+        { path: 'guest' },
+        { path: 'room', populate: { path: 'roomType' } },
+      ]);
+      if (bookingForEmail) {
+        emailResult = await sendCheckInEmail(bookingForEmail);
+      } else {
+        console.warn(
+          `[email] Không tải lại booking sau check-in, bookingId=${booking._id}`
+        );
+      }
+    } catch (mailErr) {
+      console.error(`[email] Gửi check-in thất bại, bookingId=${booking._id}:`, mailErr.message);
+      emailResult = { sent: false, reason: 'email_send_failed', error: mailErr.message };
     }
 
     res.json({
@@ -54,7 +57,9 @@ const checkIn = asyncHandler(async (req, res) => {
       email: emailResult,
     });
   } catch (error) {
-    await session.abortTransaction();
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
     throw error;
   } finally {
     session.endSession();
@@ -87,38 +92,42 @@ const checkOut = asyncHandler(async (req, res) => {
 
     booking.status = 'checked_out';
 
-    let invoice = await Invoice.findOne({ booking: booking._id }).session(session);
-    if (!invoice) {
-      const createdInvoices = await Invoice.create(
-        [{
+    const invoice = await Invoice.findOneAndUpdate(
+      { booking: booking._id },
+      {
+        $setOnInsert: {
           booking: booking._id,
           totalAmount: booking.totalPrice,
           issueDate: Date.now(),
           paymentStatus: 'pending',
-        }],
-        { session }
-      );
-      [invoice] = createdInvoices;
-    }
+        },
+      },
+      { new: true, upsert: true, runValidators: true, session }
+    );
 
     await booking.save({ session });
 
     await session.commitTransaction();
 
-    const invoiceForEmail = await Invoice.findById(invoice._id).populate({
-      path: 'booking',
-      populate: [
-        { path: 'guest' },
-        { path: 'room', populate: { path: 'roomType' } },
-      ],
-    });
     let emailResult = { sent: false, reason: 'invoice_not_found_after_checkout' };
-    if (invoiceForEmail) {
-      emailResult = await sendCheckoutInvoiceEmail(invoiceForEmail);
-    } else {
-      console.warn(
-        `[email] Không tìm thấy invoice sau checkout, invoiceId=${invoice._id}`
-      );
+    try {
+      const invoiceForEmail = await Invoice.findById(invoice._id).populate({
+        path: 'booking',
+        populate: [
+          { path: 'guest' },
+          { path: 'room', populate: { path: 'roomType' } },
+        ],
+      });
+      if (invoiceForEmail) {
+        emailResult = await sendCheckoutInvoiceEmail(invoiceForEmail);
+      } else {
+        console.warn(
+          `[email] Không tìm thấy invoice sau checkout, invoiceId=${invoice._id}`
+        );
+      }
+    } catch (mailErr) {
+      console.error(`[email] Gửi checkout thất bại, invoiceId=${invoice._id}:`, mailErr.message);
+      emailResult = { sent: false, reason: 'email_send_failed', error: mailErr.message };
     }
 
     res.json({
@@ -128,7 +137,9 @@ const checkOut = asyncHandler(async (req, res) => {
       email: emailResult,
     });
   } catch (error) {
-    await session.abortTransaction();
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
     throw error;
   } finally {
     session.endSession();

@@ -35,6 +35,42 @@
   flex-shrink: 0;
 }
 
+.base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.secondary {
+  background: #f3f4f6;
+  color: #111827;
+  border-color: #d1d5db;
+}
+
+.secondary:hover {
+  background: #e5e7eb;
+}
+
+.danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.danger:hover {
+  background: #b91c1c;
+}
+
+.md {
+  padding: 0.625rem 1rem;
+  font-size: 0.95rem;
+}
+
 /* ===== NÚT NHỎ (nếu cần) ===== */
 .sm {
   padding: 0.5rem 1rem;
