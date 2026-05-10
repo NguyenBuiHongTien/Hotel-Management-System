@@ -12,8 +12,14 @@ const getRevenueDashboard = asyncHandler(async (req, res, next) => {
     const { fromDate, toDate } = req.query; // (Tùy chọn)
     
     const matchFilter = { paymentStatus: 'paid' };
-    if (fromDate && toDate) {
-        matchFilter.updatedAt = { $gte: startOfDay(fromDate), $lte: endOfDay(toDate) };
+    if (fromDate || toDate) {
+        matchFilter.updatedAt = {};
+        if (fromDate) {
+            matchFilter.updatedAt.$gte = startOfDay(fromDate);
+        }
+        if (toDate) {
+            matchFilter.updatedAt.$lte = endOfDay(toDate);
+        }
     }
 
     const revenueAgg = await Invoice.aggregate([

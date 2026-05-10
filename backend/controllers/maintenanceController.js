@@ -10,6 +10,16 @@ const Room = require('../models/roomModel');
 const reportMaintenanceIssue = asyncHandler(async (req, res, next) => {
   const { roomId, description, priority } = req.body;
 
+  if (!roomId) {
+    res.status(400);
+    throw new Error('roomId là bắt buộc');
+  }
+  const roomExists = await Room.findById(roomId).select('_id');
+  if (!roomExists) {
+    res.status(404);
+    throw new Error('Không tìm thấy phòng');
+  }
+
   const newRequest = await Maintenance.create({
     room: roomId,
     issueDescription: description, // Khớp với model

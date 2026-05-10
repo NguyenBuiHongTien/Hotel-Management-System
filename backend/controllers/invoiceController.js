@@ -6,7 +6,7 @@ const { startOfDay, endOfDay } = require('../utils/dateRange');
 /**
  * @desc    Tạo hóa đơn cho một booking (thường được gọi tự động)
  * @route   POST /api/bookings/:bookingId/invoice
- * @access  Private (Receptionist, Accountant)
+ * @access  Private (Receptionist, Manager, Accountant)
  */
 const generateInvoiceForBooking = asyncHandler(async (req, res, next) => {
   const { bookingId } = req.params;
@@ -16,27 +16,25 @@ const generateInvoiceForBooking = asyncHandler(async (req, res, next) => {
     return res.status(404).json({ message: 'Không tìm thấy booking' });
   }
 
+  const existing = await Invoice.findOne({ booking: bookingId });
+  if (existing) {
+    return res.status(200).json(existing);
+  }
+
   try {
-    const invoice = await Invoice.findOneAndUpdate(
-      { booking: bookingId },
-      {
-        $setOnInsert: {
-          booking: bookingId,
-          totalAmount: booking.totalPrice,
-          issueDate: new Date(),
-          paymentStatus: 'pending',
-        },
-      },
-      { new: true, upsert: true, runValidators: true }
-    );
-
-    const isNew = invoice.createdAt && invoice.updatedAt &&
-      Math.abs(invoice.createdAt - invoice.updatedAt) < 2000; // heuristic tùy chọn
-
-    return res.status(isNew ? 201 : 200).json(invoice);
+    const invoice = await Invoice.create({
+      booking: bookingId,
+      totalAmount: booking.totalPrice,
+      issueDate: new Date(),
+      paymentStatus: 'pending',
+    });
+    return res.status(201).json(invoice);
   } catch (e) {
     if (e && e.code === 11000) {
-      const existing = await Invoice.findOne({ booking: bookingId });
+      const again = await Invoice.findOne({ booking: bookingId });
+      if (again) {
+        return res.status(200).json(again);
+      }
       return res.status(400).json({ message: 'Hóa đơn đã tồn tại cho booking này' });
     }
     throw e;
@@ -46,7 +44,7 @@ const generateInvoiceForBooking = asyncHandler(async (req, res, next) => {
 /**
  * @desc    Lấy tất cả hóa đơn (Lịch sử giao dịch)
  * @route   GET /api/invoices
- * @access  Private (Accountant, Manager)
+ * @access  Private (Receptionist, Manager, Accountant)
  */
 const getAllInvoices = asyncHandler(async (req, res, next) => {
   const filter = {};
@@ -99,7 +97,7 @@ const getInvoiceById = asyncHandler(async (req, res, next) => {
 /**
  * @desc    Lấy hóa đơn (view của khách) bằng Booking ID
  * @route   GET /api/invoices/guest/:bookingId
- * @access  Private (Accountant, Receptionist)
+ * @access  Private (Receptionist, Manager, Accountant)
  */
 const getGuestInvoiceView = asyncHandler(async (req, res, next) => {
     const invoice = await Invoice.findOne({ booking: req.params.bookingId })
@@ -114,15 +112,20 @@ const getGuestInvoiceView = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * @desc    Lấy hóa đơn (view tài chính) bằng Booking ID
+ * @desc    Lấy hóa đơn (view tài chính) bằng Booking ID — đầy đủ booking/guest/room và người tạo booking
  * @route   GET /api/invoices/financial/:bookingId
  * @access  Private (Accountant)
  */
 const getFinancialInvoiceView = asyncHandler(async (req, res, next) => {
-    // Tạm thời giống hệt getGuestInvoiceView
-    // Có thể populate thêm chi tiết (vd: createdBy) nếu cần
     const invoice = await Invoice.findOne({ booking: req.params.bookingId })
-        .populate('booking');
+        .populate({
+            path: 'booking',
+            populate: [
+                { path: 'guest' },
+                { path: 'room', populate: { path: 'roomType' } },
+                { path: 'createdBy', select: 'name email role' },
+            ],
+        });
     if (!invoice) {
         return res.status(404).json({ message: 'Không tìm thấy hóa đơn cho booking này'});
     }

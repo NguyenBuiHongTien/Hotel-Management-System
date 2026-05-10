@@ -36,10 +36,11 @@ const bookingSchema = new mongoose.Schema({
         required: true, 
         min: 0 
     },
+    // pending: giữ trong enum cho dữ liệu cũ / nhập tay; API tạo mới luôn dùng 'confirmed'.
     status: {
         type: String,
         enum: ['pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled'],
-        default: 'pending'
+        default: 'confirmed'
     },
     reminders: {
         checkInReminderSentAt: {

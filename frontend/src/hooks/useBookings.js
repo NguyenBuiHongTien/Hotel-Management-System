@@ -24,33 +24,36 @@ export const useBookings = () => {
   };
 
   const createBooking = async (bookingData) => {
-    const result = await bookingService.createBooking(bookingData);
-    if (!result.success) {
-      const err = new Error(result.message || 'Tạo đặt phòng thất bại');
+    try {
+      await bookingService.createBooking(bookingData);
+      setError(null);
+      await fetchBookings();
+    } catch (err) {
       setError(err.message);
       throw err;
-    } 
-    await fetchBookings();
+    }
   };
 
   const updateBooking = async (id, bookingData) => {
-    const result = await bookingService.updateBooking(id, bookingData);
-    if (!result.success) {
-      const err = new Error(result.message || 'Tạo đặt phòng thất bại');
+    try {
+      await bookingService.updateBooking(id, bookingData);
+      setError(null);
+      await fetchBookings();
+    } catch (err) {
       setError(err.message);
       throw err;
-    } 
-    await fetchBookings();
+    }
   };
 
   const cancelBooking = async (id) => {
-    const result = await bookingService.cancelBooking(id);
-    if (!result.success) {
-      const err = new Error(result.message || 'Tạo đặt phòng thất bại');
+    try {
+      await bookingService.cancelBooking(id);
+      setError(null);
+      await fetchBookings();
+    } catch (err) {
       setError(err.message);
       throw err;
-    } 
-    await fetchBookings();
+    }
   };
 
   return { bookings, isLoading, error, createBooking, updateBooking, cancelBooking, refetch: fetchBookings };

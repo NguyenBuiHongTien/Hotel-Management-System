@@ -40,7 +40,7 @@ router.get('/status/realtime', protect, authorize('receptionist', 'manager'), ge
 router.get('/:roomId', protect, getRoomById);
 
 // Route cập nhật trạng thái (Nhiều vai trò)
-router.put('/:roomId/status', protect, authorize('manager', 'receptionist', 'housekeeper', 'maintenance'), updateRoomStatusRules, validate, updateRoomStatus);
+router.put('/:roomId/status', protect, authorize('receptionist', 'housekeeper', 'maintenance'), updateRoomStatusRules, validate, updateRoomStatus);
 
 // Routes chỉ cho Quản lý
 router.post('/', protect, authorize('manager'), createRoomRules, validate, createRoom);

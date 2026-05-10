@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const Room = require('../models/roomModel');
 const RoomType = require('../models/roomTypeModel');
 const Booking = require('../models/bookingModel');
+const { buildBookingOverlapFilter } = require('../utils/bookingOverlap');
 
 /**
  * @desc    Lấy danh sách phòng (kèm filter)
@@ -103,7 +104,7 @@ const updateRoomInfo = asyncHandler(async (req, res) => {
 /**
  * @desc    Cập nhật TRẠNG THÁI phòng (Nhân viên)
  * @route   PUT /api/rooms/:roomId/status
- * @access  Private (Receptionist, Housekeeping, Maintenance)
+ * @access  Private (Receptionist, Housekeeper, Maintenance) — không Quản lý (đổi trạng thái vận hành)
  */
 const updateRoomStatus = asyncHandler(async (req, res) => {
   const { status } = req.body;
@@ -168,23 +169,19 @@ const searchAvailableRooms = asyncHandler(async (req, res) => {
     throw new Error('Ngày check-out phải sau ngày check-in');
   }
 
-  // 1. Tìm các phòng đã bị đặt trong khoảng ngày đó
-  const conflictFilter = {
-    status: { $in: ['confirmed', 'checked_in'] },
-    $or: [{ checkInDate: { $lt: checkOut }, checkOutDate: { $gt: checkIn } }],
-  };
-  if (excludeBookingId) {
-    conflictFilter._id = { $ne: excludeBookingId };
-  }
+  // 1. Booking trùng khoảng ngày (cùng công thức với create/update booking)
+  const conflictFilter = buildBookingOverlapFilter({
+    checkInDate: checkIn,
+    checkOutDate: checkOut,
+    excludeBookingId,
+  });
   const conflicts = await Booking.find(conflictFilter).select('room');
   const bookedRoomIds = conflicts.map((b) => b.room);
 
-  // 2. Xây dựng bộ lọc cho Room
+  // 2. Xây dựng bộ lọc cho Room — phòng có thể đặt trước nếu sẵn sàng hoặc đang/ sẽ dọn (không maintenance/occupied)
   const roomFilter = {
     _id: { $nin: bookedRoomIds },
-    // Chỉ tìm phòng đang 'available' HOẶC 'dirty' (nếu có thể dọn kịp)
-    // Để đơn giản, ta chỉ tìm 'available'
-    status: 'available' 
+    status: { $in: ['available', 'dirty', 'cleaning'] },
   };
   if (roomTypeId) roomFilter.roomType = roomTypeId;
 

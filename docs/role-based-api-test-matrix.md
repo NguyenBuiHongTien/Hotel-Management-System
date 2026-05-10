@@ -31,7 +31,7 @@ Tai lieu nay giup test nhanh quyen truy cap theo vai tro cho cac endpoint chinh.
 | `GET /api/rooms` | 200 | 200 | 200 | 200 | 200 |
 | `POST /api/rooms` | 201 | 403 | 403 | 403 | 403 |
 | `PUT /api/rooms/:roomId` | 200 | 403 | 403 | 403 | 403 |
-| `PUT /api/rooms/:roomId/status` (`dirty/cleaning/maintenance`) | 200 | 200 | 403 | 200 | 200 |
+| `PUT /api/rooms/:roomId/status` (`dirty/cleaning/maintenance`) | 403 | 200 | 403 | 200 | 200 |
 | `PUT /api/rooms/:roomId/status` (`available`) | 403 | 403 | 403 | 200 | 403 |
 | `PUT /api/rooms/:roomId/status` (`occupied`) | 403 | 403 | 403 | 403 | 403 |
 | `GET /api/rooms/available` | 403 | 200 | 403 | 403 | 403 |
@@ -42,10 +42,11 @@ Tai lieu nay giup test nhanh quyen truy cap theo vai tro cho cac endpoint chinh.
 
 | Endpoint | manager | receptionist | accountant | housekeeper | maintenance |
 |---|---:|---:|---:|---:|---:|
-| `GET /api/bookings` | 200 | 200 | 403 | 403 | 403 |
-| `POST /api/bookings` | 403 | 201 | 403 | 403 | 403 |
-| `PUT /api/bookings/:bookingId` | 403 | 200 | 403 | 403 | 403 |
-| `POST /api/bookings/:bookingId/cancel` | 403 | 200 | 403 | 403 | 403 |
+| `GET /api/bookings` | 200 | 200 | 200 | 403 | 403 |
+| `POST /api/bookings` | 201 | 201 | 403 | 403 | 403 |
+| `PUT /api/bookings/:bookingId` | 200 | 200 | 403 | 403 | 403 |
+| `POST /api/bookings/:bookingId/cancel` | 200 | 200 | 403 | 403 | 403 |
+| `POST /api/bookings/:bookingId/invoice` | 200/201 | 200/201 | 200/201 | 403 | 403 |
 | `POST /api/checkin` | 403 | 200 | 403 | 403 | 403 |
 | `POST /api/checkout` | 403 | 200 | 403 | 403 | 403 |
 
@@ -61,7 +62,7 @@ Tai lieu nay giup test nhanh quyen truy cap theo vai tro cho cac endpoint chinh.
 ## Invoices & Payments
 
 | Endpoint | manager | receptionist | accountant | housekeeper | maintenance |
-|---|---:|---:|---:|---:|---:|
+|---|---:|---:|---:|---:|---:|---:|
 | `GET /api/invoices` | 200 | 200 | 200 | 403 | 403 |
 | `GET /api/invoices/:invoiceId` | 200 | 200 | 200 | 403 | 403 |
 | `GET /api/invoices/guest/:bookingId` | 200 | 200 | 200 | 403 | 403 |
@@ -75,17 +76,21 @@ Tai lieu nay giup test nhanh quyen truy cap theo vai tro cho cac endpoint chinh.
 |---|---:|---:|---:|---:|---:|
 | `GET /api/reports/revenue` | 200 | 403 | 200 | 403 | 403 |
 | `GET /api/reports/occupancy` | 200 | 403 | 200 | 403 | 403 |
-| `POST /api/reports/revenue` | 200 | 403 | 200 | 403 | 403 |
-| `POST /api/reports/occupancy` | 200 | 403 | 200 | 403 | 403 |
+| `GET /api/reports/comprehensive/export` | 200 | 403 | 200 | 403 | 403 |
+| `POST /api/reports/revenue/save` | 200 | 403 | 200 | 403 | 403 |
+| `POST /api/reports/occupancy/save` | 200 | 403 | 200 | 403 | 403 |
+| `GET /api/reports` (danh sach bao cao da luu) | 200 | 403 | 200 | 403 | 403 |
+| `GET /api/reports/:reportId` | 200 | 403 | 200 | 403 | 403 |
 
 ## Maintenance
 
 | Endpoint | manager | receptionist | accountant | housekeeper | maintenance |
 |---|---:|---:|---:|---:|---:|
-| `POST /api/maintenance/issues` | 403 | 403 | 403 | 201 | 403 |
-| `GET /api/maintenance/requests` | 403 | 403 | 403 | 200 | 200 |
-| `PUT /api/maintenance/:requestId` | 403 | 403 | 403 | 200 | 200 |
-| `PUT /api/maintenance/:requestId/complete` | 403 | 403 | 403 | 403 | 200 |
+| `POST /api/maintenance/issues` | 201 | 201 | 403 | 201 | 403 |
+| `GET /api/maintenance/requests` | 200 | 403 | 403 | 403 | 200 |
+| `GET /api/maintenance/requests/:requestId` | 200 | 403 | 403 | 403 | 200 |
+| `PUT /api/maintenance/:requestId` | 200 | 403 | 403 | 403 | 200 |
+| `PUT /api/maintenance/:requestId/complete` | 200 | 403 | 403 | 403 | 200 |
 
 ## Cach su dung matrix
 

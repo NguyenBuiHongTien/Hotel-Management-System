@@ -3,39 +3,21 @@ const Booking = require('../models/bookingModel');
 const Room = require('../models/roomModel');
 const Guest = require('../models/guestModel');
 const RoomType = require('../models/roomTypeModel');
+const Invoice = require('../models/invoiceModel');
 const { sendBookingConfirmation } = require('./notificationController');
 const { startOfDay, endOfDay } = require('../utils/dateRange');
+const {
+  BOOKABLE_ROOM_STATUSES,
+  buildBookingOverlapFilter,
+} = require('../utils/bookingOverlap');
 const mongoose = require('mongoose');
 
 /**
  * @desc    Tạo booking mới
  * @route   POST /api/bookings
  * @access  Private (Receptionist, Manager)
+ * @remarks Phòng có thể ở available/dirty/cleaning (đặt trước); check-in chỉ khi phòng đã available.
  */
-const overlapFilter = ({ roomId, checkInDate, checkOutDate, excludeBookingId }) => {
-  const filter = {
-    room: roomId,
-    status: { $in: ['confirmed', 'checked_in'] },
-    $or: [
-      {
-        checkInDate: { $lte: new Date(checkInDate) },
-        checkOutDate: { $gt: new Date(checkInDate) }
-      },
-      {
-        checkInDate: { $lt: new Date(checkOutDate) },
-        checkOutDate: { $gte: new Date(checkOutDate) }
-      },
-      {
-        checkInDate: { $gte: new Date(checkInDate) },
-        checkOutDate: { $lte: new Date(checkOutDate) }
-      }
-    ]
-  };
-  if (excludeBookingId) {
-    filter._id = { $ne: excludeBookingId };
-  }
-  return filter;
-};
 
 const createBooking = asyncHandler(async (req, res) => {
   const { 
@@ -61,21 +43,34 @@ const createBooking = asyncHandler(async (req, res) => {
           throw new Error('Không tìm thấy Guest ID');
         }
       } else if (guestInfo && guestInfo.fullName && guestInfo.phoneNumber) {
-        const guestUpdate = {
-          $setOnInsert: {
-            fullName: guestInfo.fullName,
-            phoneNumber: guestInfo.phoneNumber,
-          },
-        };
-        if (guestInfo.email) guestUpdate.$set = { ...(guestUpdate.$set || {}), email: guestInfo.email };
-        if (guestInfo.address) guestUpdate.$set = { ...(guestUpdate.$set || {}), address: guestInfo.address };
-        if (guestInfo.fullName) guestUpdate.$set = { ...(guestUpdate.$set || {}), fullName: guestInfo.fullName };
-
-        guest = await Guest.findOneAndUpdate(
-          { phoneNumber: guestInfo.phoneNumber },
-          guestUpdate,
-          { upsert: true, new: true, runValidators: true, session }
-        );
+        guest = await Guest.findOne({ phoneNumber: guestInfo.phoneNumber }).session(session);
+        if (!guest) {
+          const createdGuests = await Guest.create(
+            [
+              {
+                fullName: guestInfo.fullName,
+                phoneNumber: guestInfo.phoneNumber,
+                ...(guestInfo.email ? { email: guestInfo.email } : {}),
+                ...(guestInfo.address ? { address: guestInfo.address } : {}),
+              },
+            ],
+            { session }
+          );
+          guest = createdGuests[0];
+        } else {
+          let needsSave = false;
+          if (guestInfo.email && !guest.email) {
+            guest.email = guestInfo.email;
+            needsSave = true;
+          }
+          if (guestInfo.address && !guest.address) {
+            guest.address = guestInfo.address;
+            needsSave = true;
+          }
+          if (needsSave) {
+            await guest.save({ session });
+          }
+        }
       } else {
         res.status(400);
         throw new Error('Cần thông tin customerId hoặc guestInfo');
@@ -86,6 +81,12 @@ const createBooking = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error('Không tìm thấy phòng');
       }
+      if (!BOOKABLE_ROOM_STATUSES.includes(room.status)) {
+        res.status(400);
+        throw new Error(
+          `Phòng đang ở trạng thái '${room.status}', không thể đặt (chỉ đặt được khi phòng available, dirty hoặc cleaning)`
+        );
+      }
       const roomType = await RoomType.findById(room.roomType).session(session);
       if (!roomType) {
         res.status(404);
@@ -93,7 +94,7 @@ const createBooking = asyncHandler(async (req, res) => {
       }
 
       const conflict = await Booking.findOne(
-        overlapFilter({ roomId, checkInDate, checkOutDate })
+        buildBookingOverlapFilter({ roomId, checkInDate, checkOutDate })
       ).session(session);
       if (conflict) {
         res.status(400);
@@ -108,7 +109,7 @@ const createBooking = asyncHandler(async (req, res) => {
       );
 
       const recheckConflict = await Booking.findOne(
-        overlapFilter({ roomId, checkInDate, checkOutDate })
+        buildBookingOverlapFilter({ roomId, checkInDate, checkOutDate })
       ).session(session);
       if (recheckConflict) {
         res.status(400);
@@ -152,7 +153,17 @@ const createBooking = asyncHandler(async (req, res) => {
       { path: 'createdBy', select: 'name role' }
   ]);
 
-  const emailResult = await sendBookingConfirmation(populatedBooking);
+  let emailResult = { sent: false, reason: 'skipped' };
+  try {
+    emailResult = await sendBookingConfirmation(populatedBooking);
+  } catch (mailErr) {
+    console.error(
+      `[email] Gửi xác nhận đặt phòng thất bại, bookingId=${booking._id}:`,
+      mailErr.message
+    );
+    emailResult = { sent: false, reason: 'email_send_failed', error: mailErr.message };
+  }
+
   res.status(201).json({
     ...populatedBooking.toObject(),
     email: emailResult,
@@ -270,7 +281,7 @@ const updateBooking = asyncHandler(async (req, res) => {
         }
 
         const conflict = await Booking.findOne(
-          overlapFilter({
+          buildBookingOverlapFilter({
             roomId: targetRoomId,
             checkInDate: targetCheckIn,
             checkOutDate: targetCheckOut,
@@ -289,7 +300,7 @@ const updateBooking = asyncHandler(async (req, res) => {
         );
 
         const recheckConflict = await Booking.findOne(
-          overlapFilter({
+          buildBookingOverlapFilter({
             roomId: targetRoomId,
             checkInDate: targetCheckIn,
             checkOutDate: targetCheckOut,
@@ -305,6 +316,13 @@ const updateBooking = asyncHandler(async (req, res) => {
         if (!room) {
           res.status(404);
           throw new Error('Không tìm thấy phòng');
+        }
+        const movingToAnotherRoom = String(txBooking.room) !== String(targetRoomId);
+        if (movingToAnotherRoom && !BOOKABLE_ROOM_STATUSES.includes(room.status)) {
+          res.status(400);
+          throw new Error(
+            `Phòng đích đang ở trạng thái '${room.status}', không thể chuyển booking sang phòng này (chỉ chuyển được sang phòng available, dirty hoặc cleaning)`
+          );
         }
         const roomType = await RoomType.findById(room.roomType).session(session);
         if (!roomType) {
@@ -322,6 +340,13 @@ const updateBooking = asyncHandler(async (req, res) => {
         txBooking.numberOfGuests = numberOfGuests;
       }
       updated = await txBooking.save({ session });
+
+      // Đồng bộ hóa đơn chờ thanh toán với tổng tiền booking (tránh lệch sau đổi phòng/ngày)
+      await Invoice.updateOne(
+        { booking: txBooking._id, paymentStatus: 'pending' },
+        { $set: { totalAmount: txBooking.totalPrice } },
+        { session }
+      );
     });
   } catch (error) {
     if (error?.errorLabels?.includes('TransientTransactionError')) {

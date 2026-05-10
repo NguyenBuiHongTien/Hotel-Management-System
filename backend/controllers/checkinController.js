@@ -27,6 +27,29 @@ const checkIn = asyncHandler(async (req, res) => {
       throw new Error(`Booking đang ở trạng thái '${booking.status}', không thể check-in`);
     }
 
+    const room = await Room.findById(booking.room).session(session);
+    if (!room) {
+      res.status(404);
+      throw new Error('Không tìm thấy phòng gắn với booking');
+    }
+    if (room.status !== 'available') {
+      res.status(400);
+      let hint = '';
+      if (room.status === 'dirty' || room.status === 'cleaning') {
+        hint =
+          ' Buồng phòng cần hoàn tất dọn và chuyển phòng sang trạng thái "available" trước khi check-in (đặt phòng khi phòng dirty/cleaning là đặt trước, chưa đủ điều kiện nhận khách).';
+      } else if (room.status === 'maintenance') {
+        hint =
+          ' Cần hoàn tất bảo trì và chuyển phòng sang "available" (hoặc trạng thái phù hợp quy trình) trước khi nhận khách.';
+      } else if (room.status === 'occupied') {
+        hint =
+          ' Phòng đang được ghi nhận có khách; kiểm tra dữ liệu booking/phòng hoặc xử lý check-out trước đó nếu đây là lỗi dữ liệu.';
+      }
+      throw new Error(
+        `Phòng đang ở trạng thái '${room.status}', chỉ có thể check-in khi phòng ở trạng thái 'available'.${hint}`
+      );
+    }
+
     await Room.findByIdAndUpdate(booking.room, { status: 'occupied' }).session(session);
 
     booking.status = 'checked_in';

@@ -17,8 +17,8 @@ const normalizeRole = (role) => {
     return ROLE_ALIASES[normalized] || normalized;
 };
 
-// 1. HÀM 'PROTECT' (Giữ nguyên - Vẫn hoàn hảo)
-// Bảo vệ route, kiểm tra user đã đăng nhập chưa
+// 1. HÀM 'PROTECT'
+// JWT: ném lỗi có name TokenExpiredError / JsonWebTokenError để errorMiddleware trả 401 + message rõ ràng.
 const protect = asyncHandler(async (req, res, next) => {
     const authHeader = req.headers.authorization || '';
     if (!authHeader.startsWith('Bearer ')) {
@@ -44,6 +44,16 @@ const protect = asyncHandler(async (req, res, next) => {
         next();
     } catch (error) {
         res.status(401);
+        if (error.name === 'TokenExpiredError') {
+            const e = new Error('Token đã hết hạn');
+            e.name = 'TokenExpiredError';
+            throw e;
+        }
+        if (error.name === 'JsonWebTokenError') {
+            const e = new Error('Token không hợp lệ');
+            e.name = 'JsonWebTokenError';
+            throw e;
+        }
         throw new Error('Not authorized, token failed');
     }
 });
@@ -64,9 +74,7 @@ const authorize = (...roles) => {
 
         if (!allowedRoles.includes(userRole)) {
             res.status(403);
-            throw new Error(
-                `User role '${req.user.role}' (normalized: '${userRole}') is not authorized to access this resource. Allowed roles: ${allowedRoles.join(', ')}`
-            );
+            throw new Error('Không có quyền truy cập tài nguyên này');
         }
 
         next();

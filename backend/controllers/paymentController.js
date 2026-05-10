@@ -40,16 +40,24 @@ const recordPayment = asyncHandler(async (req, res, next) => {
     return res.status(400).json({ message: 'Hóa đơn này đã được thanh toán' });
   }
 
-  const invoiceForEmail = await Invoice.findById(invoice._id).populate({
-    path: 'booking',
-    populate: [
-      { path: 'guest' },
-      { path: 'room', populate: { path: 'roomType' } },
-    ],
-  });
-  const emailResult = invoiceForEmail
-    ? await sendPaymentSuccessEmail(invoiceForEmail)
-    : { sent: false, reason: 'invoice_not_found_after_payment' };
+  let emailResult = { sent: false, reason: 'skipped' };
+  try {
+    const invoiceForEmail = await Invoice.findById(invoice._id).populate({
+      path: 'booking',
+      populate: [
+        { path: 'guest' },
+        { path: 'room', populate: { path: 'roomType' } },
+      ],
+    });
+    if (invoiceForEmail) {
+      emailResult = await sendPaymentSuccessEmail(invoiceForEmail);
+    } else {
+      emailResult = { sent: false, reason: 'invoice_not_found_after_payment' };
+    }
+  } catch (mailErr) {
+    console.error(`[email] Gửi thanh toán thất bại, invoiceId=${invoice._id}:`, mailErr.message);
+    emailResult = { sent: false, reason: 'email_send_failed', error: mailErr.message };
+  }
 
   res.status(200).json({
     ...invoice.toObject(),
