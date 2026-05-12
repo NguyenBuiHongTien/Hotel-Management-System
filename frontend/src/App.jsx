@@ -8,46 +8,58 @@ import MaintenanceDashboard from './pages/MaintenanceDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
-import { normalizeRole } from './services/authService';
+import { authService, normalizeRole } from './services/authService';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    // Check if user is logged in on app load
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const userData = JSON.parse(storedUser);
-        // Validate user data has required fields
-        if (userData && userData.role) {
-          const normalizedUser = { ...userData, role: normalizeRole(userData.role) };
-          localStorage.setItem('user', JSON.stringify(normalizedUser));
-          setCurrentUser(normalizedUser);
-        } else {
-          // Invalid user data, clear it
-          console.warn('Invalid user data in localStorage, clearing...');
-          localStorage.removeItem('user');
-          localStorage.removeItem('token');
-        }
-      } catch (error) {
-        console.error('Error parsing user data:', error);
+    let cancelled = false;
+
+    const hydrateSession = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
         localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        if (!cancelled) {
+          setCurrentUser(null);
+          setAuthChecked(true);
+        }
+        return;
       }
-    }
+
+      const result = await authService.getProfile();
+      if (cancelled) return;
+
+      if (result.success && result.user?.role) {
+        const u = { ...result.user, role: normalizeRole(result.user.role) };
+        localStorage.setItem('user', JSON.stringify(u));
+        setCurrentUser(u);
+      } else {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setCurrentUser(null);
+      }
+      setAuthChecked(true);
+    };
+
+    hydrateSession();
+
     const onUnauthorized = () => {
       setCurrentUser(null);
+      setAuthChecked(true);
     };
     window.addEventListener('auth:unauthorized', onUnauthorized);
 
     return () => {
+      cancelled = true;
       window.removeEventListener('auth:unauthorized', onUnauthorized);
     };
   }, []);
 
   const handleLogin = (user) => {
     setCurrentUser({ ...user, role: normalizeRole(user?.role) });
+    setAuthChecked(true);
   };
 
   const handleLogout = () => {
@@ -55,6 +67,14 @@ function App() {
     localStorage.removeItem('token');
     setCurrentUser(null);
   };
+
+  if (!authChecked) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', fontFamily: 'system-ui' }}>
+        Signing you in…
+      </div>
+    );
+  }
 
   return (
     <ErrorBoundary>
@@ -73,7 +93,11 @@ function App() {
           <Route
             path="/receptionist"
             element={
-              <ProtectedRoute isAuthenticated={currentUser?.role === 'receptionist'} allowedRoles={['receptionist']}>
+              <ProtectedRoute
+                isAuthenticated={!!currentUser}
+                allowedRoles={['receptionist']}
+                user={currentUser}
+              >
                 <ReceptionistDashboard onLogout={handleLogout} />
               </ProtectedRoute>
             }
@@ -81,7 +105,11 @@ function App() {
           <Route
             path="/accountant"
             element={
-              <ProtectedRoute isAuthenticated={currentUser?.role === 'accountant'}>
+              <ProtectedRoute
+                isAuthenticated={!!currentUser}
+                allowedRoles={['accountant']}
+                user={currentUser}
+              >
                 <AccountantDashboard onLogout={handleLogout} />
               </ProtectedRoute>
             }
@@ -89,7 +117,11 @@ function App() {
           <Route
             path="/housekeeper"
             element={
-              <ProtectedRoute isAuthenticated={currentUser?.role === 'housekeeper'}>
+              <ProtectedRoute
+                isAuthenticated={!!currentUser}
+                allowedRoles={['housekeeper']}
+                user={currentUser}
+              >
                 <HousekeepingDashboard onLogout={handleLogout} />
               </ProtectedRoute>
             }
@@ -97,7 +129,11 @@ function App() {
           <Route
             path="/maintenance"
             element={
-              <ProtectedRoute isAuthenticated={currentUser?.role === 'maintenance'}>
+              <ProtectedRoute
+                isAuthenticated={!!currentUser}
+                allowedRoles={['maintenance']}
+                user={currentUser}
+              >
                 <MaintenanceDashboard onLogout={handleLogout} />
               </ProtectedRoute>
             }
@@ -105,7 +141,11 @@ function App() {
           <Route
             path="/manager"
             element={
-              <ProtectedRoute isAuthenticated={currentUser?.role === 'manager'}>
+              <ProtectedRoute
+                isAuthenticated={!!currentUser}
+                allowedRoles={['manager']}
+                user={currentUser}
+              >
                 <ManagerDashboard onLogout={handleLogout} />
               </ProtectedRoute>
             }

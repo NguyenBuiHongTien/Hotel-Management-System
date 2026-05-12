@@ -19,7 +19,7 @@ const guestSchema = new mongoose.Schema({
           validator: function(v) {
             return /^[0-9]{10,11}$/.test(v);
           },
-          message: 'Số điện thoại phải có 10-11 chữ số'
+          message: 'Phone number must be 10–11 digits'
         }
     },
     email: { 
@@ -30,7 +30,7 @@ const guestSchema = new mongoose.Schema({
           validator: function(v) {
             return !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
           },
-          message: 'Email không hợp lệ'
+          message: 'Invalid email'
         }
     },
     address: { 

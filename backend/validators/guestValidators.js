@@ -1,34 +1,37 @@
 const { body } = require('express-validator');
+const { normalizePhoneVN } = require('../utils/phoneNormalize');
 
 const createGuestRules = [
    body('fullName')
-    .notEmpty().withMessage('Họ và tên là bắt buộc')
-    .isString().withMessage('Họ và tên phải là chuỗi')
+    .notEmpty().withMessage('Full name is required')
+    .isString().withMessage('Full name must be a string')
     .trim(),
-  
+
   body('phoneNumber')
-    .notEmpty().withMessage('Số điện thoại là bắt buộc')
-    .matches(/^[0-9]{10,11}$/).withMessage('Số điện thoại phải có 10–11 chữ số'),
+    .customSanitizer(normalizePhoneVN)
+    .notEmpty().withMessage('Phone number is required')
+    .matches(/^[0-9]{10,11}$/).withMessage('Phone number must be 10–11 digits (e.g. 0901234567 or +84 901 234 567)'),
 
   body('email')
-    .optional()
-    .isEmail().withMessage('Email không hợp lệ')
+    .optional({ values: 'falsy' })
+    .isEmail().withMessage('Invalid email')
     .normalizeEmail(),
 
   body('address')
     .optional()
-    .isString().withMessage('Địa chỉ phải là chuỗi')
+    .isString().withMessage('Address must be a string')
     .trim()
 ];
 
 const updateGuestRules = [
   body('fullName')
-    .notEmpty().withMessage('Họ và tên là bắt buộc')
+    .notEmpty().withMessage('Full name is required')
     .isString().trim(),
   body('phoneNumber')
-    .notEmpty().withMessage('Số điện thoại là bắt buộc')
-    .matches(/^[0-9]{10,11}$/).withMessage('Số điện thoại phải có 10–11 chữ số'),
-  body('email').optional().isEmail().normalizeEmail(),
+    .customSanitizer(normalizePhoneVN)
+    .notEmpty().withMessage('Phone number is required')
+    .matches(/^[0-9]{10,11}$/).withMessage('Phone number must be 10–11 digits (e.g. 0901234567 or +84 901 234 567)'),
+  body('email').optional({ values: 'falsy' }).isEmail().normalizeEmail(),
   body('address').optional().isString().trim()
 ];
 

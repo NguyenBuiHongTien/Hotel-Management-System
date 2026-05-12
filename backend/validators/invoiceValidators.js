@@ -2,17 +2,16 @@ const { body } = require('express-validator');
 
 const createInvoiceRules = [
   body('totalAmount')
-    .notEmpty().withMessage('Tổng tiền là bắt buộc')
-    .isFloat({ min: 0 }).withMessage('Tổng tiền phải là số không âm'),
+    .notEmpty().withMessage('Total amount is required')
+    .isFloat({ min: 0 }).withMessage('Total amount must be a non-negative number'),
 
   body('paymentStatus')
     .optional()
-    .isIn(['pending', 'paid', 'cancelled']).withMessage('Trạng thái thanh toán không hợp lệ'),
+    .isIn(['pending', 'paid', 'cancelled']).withMessage('Invalid payment status'),
 
   body('paymentMethod')
     .optional()
-    .isIn(['cash', 'card', 'bank_transfer', 'online']).withMessage('Phương thức thanh toán không hợp lệ'),
+    .isIn(['cash', 'card', 'bank_transfer', 'online']).withMessage('Invalid payment method'),
 ];
 
 module.exports = { createInvoiceRules };
-

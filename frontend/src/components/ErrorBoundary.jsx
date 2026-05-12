@@ -1,4 +1,6 @@
 import React from 'react';
+import styles from '../styles/Dashboard.module.css';
+import buttonStyles from '../styles/Button.module.css';
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -17,11 +19,15 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '20px', textAlign: 'center' }}>
-          <h2>Đã xảy ra lỗi</h2>
-          <p>Vui lòng tải lại trang hoặc liên hệ quản trị viên.</p>
-          <button onClick={() => window.location.reload()}>
-            Tải lại trang
+        <div className={styles.errorBoundaryCard}>
+          <h2 className={styles.modalFormTitle}>Something went wrong</h2>
+          <p className={styles.panelMuted}>Please reload the page or contact an administrator.</p>
+          <button
+            type="button"
+            className={`${buttonStyles.primary} ${buttonStyles.md}`}
+            onClick={() => window.location.reload()}
+          >
+            Reload page
           </button>
         </div>
       );

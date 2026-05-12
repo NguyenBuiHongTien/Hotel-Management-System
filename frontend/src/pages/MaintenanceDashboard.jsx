@@ -6,8 +6,9 @@ import badgeStyles from '../styles/Badge.module.css';
 import buttonStyles from '../styles/Button.module.css';
 import maintenanceService from '../services/maintenanceService';
 import { roomService } from '../services/roomService';
+import { asArray } from '../utils/apiNormalize';
 
-// Maintenance dashboard now loads real data from backend
+// Maintenance dashboard loads real data from backend
 // Endpoints used:
 // GET  /api/maintenance/requests  -> list requests
 // PUT  /api/maintenance/:requestId -> update status/assign
@@ -24,10 +25,10 @@ const MaintenanceDashboard = ({ onLogout }) => {
     try {
       setLoading(true);
       const data = await maintenanceService.getRequests();
-      setRequests(Array.isArray(data) ? data : (data.data || []));
+      setRequests(asArray(data, 'requests'));
     } catch (err) {
       console.error('Failed to load maintenance requests', err);
-      alert('Không thể tải yêu cầu bảo trì.');
+      alert('Could not load maintenance requests.');
     } finally {
       setLoading(false);
     }
@@ -36,7 +37,7 @@ const MaintenanceDashboard = ({ onLogout }) => {
   const loadMaintenanceRooms = useCallback(async () => {
     try {
       const data = await roomService.getMaintenanceRooms();
-      setMaintenanceRooms(Array.isArray(data) ? data : (data.data || []));
+      setMaintenanceRooms(asArray(data, 'rooms'));
     } catch (err) {
       console.warn('Could not load maintenance rooms:', err);
       setMaintenanceRooms([]);
@@ -49,8 +50,7 @@ const MaintenanceDashboard = ({ onLogout }) => {
 
   useEffect(() => {
     fetchAllData();
-    
-    // Auto-refresh mỗi 30 giây để đồng bộ trạng thái
+
     const interval = setInterval(() => {
       fetchAllData();
     }, 30000);
@@ -62,94 +62,92 @@ const MaintenanceDashboard = ({ onLogout }) => {
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       await maintenanceService.updateRequest(requestId, { assignedTo: user._id, status: 'in_progress' });
-      await fetchAllData(); // Refresh cả requests và rooms
+      await fetchAllData();
     } catch (err) {
       console.error(err);
-      alert('Không thể gán công việc');
+      alert('Could not assign work');
     }
   };
 
   const handleComplete = async (requestId) => {
-    if (!window.confirm('Xác nhận hoàn thành bảo trì? Phòng sẽ tự động chuyển sang trạng thái "Cần dọn".')) {
+    if (!window.confirm('Mark maintenance complete? The room will be set to "Needs cleaning".')) {
       return;
     }
     try {
       await maintenanceService.completeRequest(requestId);
-      alert('Đã hoàn thành bảo trì! Phòng đã chuyển sang trạng thái "Cần dọn".');
-      await fetchAllData(); // Refresh cả requests và rooms để đồng bộ
+      alert('Maintenance complete! The room is now marked as needs cleaning.');
+      await fetchAllData();
     } catch (err) {
       console.error(err);
-      alert('Không thể đánh dấu hoàn thành: ' + (err.message || ''));
+      alert('Could not mark complete: ' + (err.message || ''));
     }
   };
 
   const getStatusLabel = (status) => {
     const labels = {
-      'reported': 'Đã báo cáo',
-      'in_progress': 'Đang xử lý',
-      'completed': 'Hoàn thành',
-      'cancelled': 'Đã hủy'
+      'reported': 'Reported',
+      'in_progress': 'In progress',
+      'completed': 'Completed',
+      'cancelled': 'Cancelled'
     };
     return labels[status] || status;
   };
 
   const getPriorityLabel = (priority) => {
     const labels = {
-      'low': 'Thấp',
-      'medium': 'Trung bình',
-      'high': 'Cao'
+      'low': 'Low',
+      'medium': 'Medium',
+      'high': 'High'
     };
     return labels[priority] || priority;
   };
 
   return (
     <div className={styles.container}>
-      <NavBar title="Bảo trì" icon={Wrench} onLogout={onLogout} />
+      <NavBar title="Maintenance" icon={Wrench} onLogout={onLogout} />
       <div className={styles.content}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 className={styles.sectionTitle}>Yêu cầu bảo trì</h2>
+        <div className={styles.flexBetween}>
+          <h2 className={styles.sectionTitle}>Maintenance requests</h2>
           <button
             className={`${buttonStyles.base} ${buttonStyles.secondary} ${buttonStyles.sm}`}
             onClick={fetchAllData}
-            title="Làm mới dữ liệu"
+            title="Refresh data"
           >
-            <RefreshCw size={16} style={{ marginRight: '0.25rem' }} />
-            Làm mới
+            <RefreshCw size={16} aria-hidden />
+            Refresh
           </button>
         </div>
 
-        {/* Stats */}
-        <div className={`${styles.grid} ${styles.grid3}`} style={{ marginBottom: '1.5rem' }}>
-          <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Tổng yêu cầu</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1f2937' }}>{requests.length}</div>
+        <div className={`${styles.grid} ${styles.grid3} ${styles.mbLg}`}>
+          <div className={styles.statTile}>
+            <div className={styles.statTileLabel}>Total requests</div>
+            <div className={styles.statTileValue}>{requests.length}</div>
           </div>
-          <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Đang xử lý</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#f97316' }}>
-              {requests.filter(r => r.status === 'in_progress').length}
+          <div className={styles.statTile}>
+            <div className={styles.statTileLabel}>In progress</div>
+            <div className={styles.statTileValueAccent}>
+              {requests.filter((r) => r.status === 'in_progress').length}
             </div>
           </div>
-          <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Phòng đang bảo trì</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#eab308' }}>{maintenanceRooms.length}</div>
+          <div className={styles.statTile}>
+            <div className={styles.statTileLabel}>Rooms in maintenance</div>
+            <div className={styles.statTileValueGold}>{maintenanceRooms.length}</div>
           </div>
         </div>
 
-        {/* Maintenance Requests */}
         {loading ? (
-          <p>Đang tải yêu cầu...</p>
+          <p>Loading requests...</p>
         ) : requests.length === 0 ? (
-          <p>Không có yêu cầu bảo trì.</p>
+          <p>No maintenance requests.</p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
+          <div className={styles.taskListStack}>
             {requests.map(req => (
-              <div key={req._id} style={{ background: 'white', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem', gap: '0.5rem' }}>
-                      <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1f2937' }}>
-                        Phòng {req.room?.roomNumber || req.room}
+              <div key={req._id} className={styles.dashboardPanel}>
+                <div className={styles.taskCard}>
+                  <div className={styles.taskCardMain}>
+                    <div className={styles.taskTitleRow}>
+                      <h3 className={styles.roomCardTitle}>
+                        Room {req.room?.roomNumber || req.room}
                       </h3>
                       <span className={`${badgeStyles.badge} ${
                         req.priority === 'high' ? badgeStyles.danger :
@@ -164,47 +162,50 @@ const MaintenanceDashboard = ({ onLogout }) => {
                         {getStatusLabel(req.status)}
                       </span>
                     </div>
-                    <p style={{ color: '#6b7280', marginBottom: '0.5rem' }}>
-                      <strong>Mô tả:</strong> {req.issueDescription || req.issue || req.description}
+                    <p className={`${styles.panelMuted} ${styles.mbHalf}`}>
+                      <strong className={styles.textStrong}>Description:</strong>{' '}
+                      {req.issueDescription || req.issue || req.description}
                     </p>
                     {req.reportedBy && (
-                      <p style={{ fontSize: '0.875rem', color: '#9ca3af', marginBottom: '0.5rem' }}>
-                        Báo cáo bởi: {req.reportedBy.name || 'N/A'}
+                      <p className={`${styles.panelMuted} ${styles.mbHalf}`}>
+                        Reported by: {req.reportedBy.name || 'N/A'}
                       </p>
                     )}
                     {req.completedAt && (
-                      <p style={{ fontSize: '0.875rem', color: '#9ca3af' }}>
-                        Hoàn thành: {new Date(req.completedAt).toLocaleString('vi-VN')}
+                      <p className={styles.panelMuted}>
+                        Completed: {new Date(req.completedAt).toLocaleString('en-US')}
                       </p>
                     )}
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginLeft: '1rem' }}>
+                  <div className={styles.taskCardActions}>
                     {req.status !== 'completed' && req.status !== 'in_progress' && (
-                      <button 
-                        className={`${buttonStyles.primary} ${buttonStyles.sm}`} 
+                      <button
+                        type="button"
+                        className={`${buttonStyles.primary} ${buttonStyles.sm}`}
                         onClick={() => handleAssignToMe(req._id)}
                       >
-                        Gán cho tôi
+                        Assign to me
                       </button>
                     )}
                     {req.status === 'in_progress' && (
-                      <button 
-                        className={`${buttonStyles.primary} ${buttonStyles.sm}`} 
-                        style={{ background: '#16a34a' }} 
+                      <button
+                        type="button"
+                        className={styles.btnSuccess}
                         onClick={() => handleComplete(req._id)}
                       >
-                        Hoàn thành
+                        Complete
                       </button>
                     )}
                     <button
+                      type="button"
                       className={`${buttonStyles.secondary} ${buttonStyles.sm}`}
                       onClick={() => {
                         setSelectedRequest(req);
                         setShowRoomDetail(true);
                       }}
                     >
-                      <Eye size={14} style={{ marginRight: '0.25rem' }} />
-                      Xem phòng
+                      <Eye size={14} aria-hidden />
+                      View room
                     </button>
                   </div>
                 </div>
@@ -213,21 +214,20 @@ const MaintenanceDashboard = ({ onLogout }) => {
           </div>
         )}
 
-        {/* Maintenance Rooms List */}
         {maintenanceRooms.length > 0 && (
-          <div style={{ marginTop: '2rem' }}>
-            <h2 className={styles.sectionTitle}>Phòng đang bảo trì</h2>
+          <div className={styles.mtXl}>
+            <h2 className={styles.sectionTitle}>Rooms in maintenance</h2>
             <div className={`${styles.grid} ${styles.gridRooms}`}>
-              {maintenanceRooms.map(room => (
-                <div key={room._id} style={{ background: 'white', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 600 }}>Phòng {room.roomNumber}</h3>
-                    <span className={`${badgeStyles.badge} ${badgeStyles.warning}`}>
-                      Bảo trì
-                    </span>
+              {maintenanceRooms.map((room) => (
+                <div key={room._id} className={`${styles.dashboardPanel} ${styles.panelTight}`}>
+                  <div className={styles.flexHeaderRow}>
+                    <h3 className={`${styles.roomCardTitle} ${styles.roomCardTitleSm}`}>
+                      Room {room.roomNumber}
+                    </h3>
+                    <span className={`${badgeStyles.badge} ${badgeStyles.warning}`}>Maintenance</span>
                   </div>
-                  <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                    Tầng {room.floor || '-'} | {room.roomType?.typeName || 'N/A'}
+                  <p className={styles.panelMuted}>
+                    Floor {room.floor || '-'} | {room.roomType?.typeName || 'N/A'}
                   </p>
                 </div>
               ))}
@@ -235,36 +235,36 @@ const MaintenanceDashboard = ({ onLogout }) => {
           </div>
         )}
 
-        {/* Room Detail Modal */}
         {showRoomDetail && selectedRequest && (
           <div className={styles.modalOverlay} onClick={() => setShowRoomDetail(false)}>
             <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-              <h2>Chi tiết phòng {selectedRequest.room?.roomNumber || selectedRequest.room}</h2>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
-                <p><b>Trạng thái:</b> 
-                  <span className={`${badgeStyles.badge} ${badgeStyles.warning}`} style={{ marginLeft: '0.5rem' }}>
-                    Bảo trì
+              <h2 className={styles.modalFormTitle}>Room {selectedRequest.room?.roomNumber || selectedRequest.room}</h2>
+              <div className={styles.modalFormStack}>
+                <p><b>Status:</b>
+                  <span className={`${badgeStyles.badge} ${badgeStyles.warning} ${styles.badgeSpacer}`}>
+                    Maintenance
                   </span>
                 </p>
-                <p><b>Yêu cầu bảo trì:</b> {selectedRequest.issueDescription || 'N/A'}</p>
-                <p><b>Mức độ ưu tiên:</b> {getPriorityLabel(selectedRequest.priority)}</p>
-                <p><b>Trạng thái yêu cầu:</b> {getStatusLabel(selectedRequest.status)}</p>
+                <p><b>Request:</b> {selectedRequest.issueDescription || 'N/A'}</p>
+                <p><b>Priority:</b> {getPriorityLabel(selectedRequest.priority)}</p>
+                <p><b>Request status:</b> {getStatusLabel(selectedRequest.status)}</p>
                 {selectedRequest.reportedBy && (
-                  <p><b>Báo cáo bởi:</b> {selectedRequest.reportedBy.name || 'N/A'}</p>
+                  <p><b>Reported by:</b> {selectedRequest.reportedBy.name || 'N/A'}</p>
                 )}
                 {selectedRequest.completedAt && (
-                  <p><b>Hoàn thành:</b> {new Date(selectedRequest.completedAt).toLocaleString('vi-VN')}</p>
+                  <p><b>Completed:</b> {new Date(selectedRequest.completedAt).toLocaleString('en-US')}</p>
                 )}
               </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+              <div className={styles.modalFooterBar}>
                 <button
+                  type="button"
                   className={`${buttonStyles.secondary} ${buttonStyles.md}`}
                   onClick={() => {
                     setShowRoomDetail(false);
                     setSelectedRequest(null);
                   }}
                 >
-                  Đóng
+                  Close
                 </button>
               </div>
             </div>

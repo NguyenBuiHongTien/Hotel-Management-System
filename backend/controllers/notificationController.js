@@ -1,21 +1,21 @@
-// Các hàm nội bộ gửi email qua Gmail API (OAuth2 + refresh token)
+// Internal helpers to send email via Gmail API (OAuth2 + refresh token)
 const { google } = require('googleapis');
 const { escapeHtml } = require('../utils/escapeHtml');
 
 const fmtDate = (d) =>
-  new Date(d).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+  new Date(d).toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
 
 const fmtCurrency = (value) =>
-  `${Number(value || 0).toLocaleString('vi-VN')} đ`;
+  `${Number(value || 0).toLocaleString('en-US')} VND`;
 
 const paymentMethodLabel = (method) => {
   const map = {
-    cash: 'Tiền mặt',
-    card: 'Thẻ',
-    bank_transfer: 'Chuyển khoản',
-    online: 'Thanh toán online',
+    cash: 'Cash',
+    card: 'Card',
+    bank_transfer: 'Bank transfer',
+    online: 'Online payment',
   };
-  return map[method] || method || 'Chưa xác định';
+  return map[method] || method || 'Not specified';
 };
 
 const renderEmailLayout = ({ title, subtitle, intro, rows, note }) => {
@@ -49,7 +49,7 @@ const renderEmailLayout = ({ title, subtitle, intro, rows, note }) => {
   `;
 };
 
-/** Encode RFC 2047 Subject cho tiếng Việt */
+/** Encode RFC 2047 Subject for UTF-8 */
 function encodeSubject(subject) {
   return `=?UTF-8?B?${Buffer.from(subject, 'utf8').toString('base64')}?=`;
 }
@@ -113,11 +113,11 @@ async function getGmailClient() {
 
   if (!clientId || !clientSecret || !refreshToken) {
     throw new Error(
-      'Thiếu GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET hoặc GMAIL_REFRESH_TOKEN'
+      'Missing GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, or GMAIL_REFRESH_TOKEN'
     );
   }
 
-  // Trùng redirect URI với script getEmailRefreshToken.js (quan trọng khi refresh access token)
+  // Must match redirect URI used in getEmailRefreshToken.js when refreshing access token
   const redirectPort = Number(process.env.GMAIL_OAUTH_PORT) || 3000;
   const redirectUri =
     process.env.GOOGLE_REDIRECT_URI ||
@@ -135,13 +135,13 @@ async function getGmailClient() {
 
 /**
  * @param {object} opts
- * @param {string} [opts.logContext] — ghi log khi lỗi (vd: bookingId=..., invoiceId=...)
+ * @param {string} [opts.logContext] — log context on error (e.g. bookingId=..., invoiceId=...)
  */
 const sendEmail = async ({ to, subject, text, html, logContext }) => {
   const prefix = logContext ? `[email ${logContext}] ` : '';
 
   if (!isValidEmail(to)) {
-    console.warn(`${prefix}Email người nhận không hợp lệ: ${to || '(empty)'}`);
+    console.warn(`${prefix}Invalid recipient email: ${to || '(empty)'}`);
     return { ok: false, skipped: true, reason: 'invalid_recipient_email' };
   }
 
@@ -149,7 +149,7 @@ const sendEmail = async ({ to, subject, text, html, logContext }) => {
   try {
     gmail = await getGmailClient();
   } catch (err) {
-    console.warn(`${prefix}${err.message} — bỏ qua gửi mail`);
+    console.warn(`${prefix}${err.message} — skipping email send`);
     return { ok: false, skipped: true, reason: 'missing_oauth_config' };
   }
 
@@ -160,14 +160,14 @@ const sendEmail = async ({ to, subject, text, html, logContext }) => {
       from = String(profile.data.emailAddress || '').trim();
     } catch (err) {
       const msg = err.response?.data ? JSON.stringify(err.response.data) : err.message;
-      console.warn(`${prefix}Không lấy được địa chỉ gửi (profile Gmail): ${msg}`);
+      console.warn(`${prefix}Could not resolve sender from Gmail profile: ${msg}`);
       return { ok: false, skipped: true, reason: 'missing_sender_email' };
     }
   }
 
   if (!from || !isValidEmail(from)) {
     console.warn(
-      `${prefix}Thiếu địa chỉ gửi hợp lệ — đặt GMAIL_SENDER_EMAIL trong .env hoặc kiểm tra OAuth`
+      `${prefix}Missing valid sender — set GMAIL_SENDER_EMAIL in .env or check OAuth`
     );
     return { ok: false, skipped: true, reason: 'missing_sender_email' };
   }
@@ -191,7 +191,7 @@ const sendEmail = async ({ to, subject, text, html, logContext }) => {
 
 exports.sendCheckInEmail = async (booking) => {
   if (!booking) {
-    console.warn('[email] sendCheckInEmail: booking là null/undefined, bỏ qua');
+    console.warn('[email] sendCheckInEmail: booking is null/undefined, skipping');
     return { sent: false, reason: 'missing_booking' };
   }
 
@@ -206,29 +206,29 @@ exports.sendCheckInEmail = async (booking) => {
 
   const roomLabel =
     booking.room && booking.room.roomNumber != null
-      ? `Phòng ${booking.room.roomNumber}`
+      ? `Room ${booking.room.roomNumber}`
       : '';
   const subject = roomLabel
-    ? `Check-in thành công — ${roomLabel}`
-    : 'Check-in thành công';
-  const atRoom = roomLabel ? ` tại ${roomLabel}` : '';
+    ? `Check-in successful — ${roomLabel}`
+    : 'Check-in successful';
+  const atRoom = roomLabel ? ` at ${roomLabel}` : '';
   const text = [
-    `Chào ${guest.fullName},`,
+    `Hello ${guest.fullName},`,
     '',
-    `Bạn đã check-in thành công${atRoom}.`,
-    `Check-in dự kiến: ${fmtDate(booking.checkInDate)}`,
-    `Check-out dự kiến: ${fmtDate(booking.checkOutDate)}`,
+    `You have successfully checked in${atRoom}.`,
+    `Scheduled check-in: ${fmtDate(booking.checkInDate)}`,
+    `Scheduled check-out: ${fmtDate(booking.checkOutDate)}`,
   ].join('\n');
   const html = renderEmailLayout({
-    title: 'Check-in thành công',
-    subtitle: roomLabel || 'Thông tin lưu trú',
-    intro: `Chào <strong>${escapeHtml(guest.fullName)}</strong>, bạn đã check-in thành công${roomLabel ? ` tại <strong>${escapeHtml(roomLabel)}</strong>` : ''}.`,
+    title: 'Check-in successful',
+    subtitle: roomLabel || 'Stay details',
+    intro: `Hello <strong>${escapeHtml(guest.fullName)}</strong>, you have successfully checked in${roomLabel ? ` at <strong>${escapeHtml(roomLabel)}</strong>` : ''}.`,
     rows: [
-      { label: 'Check-in dự kiến', value: fmtDate(booking.checkInDate) },
-      { label: 'Check-out dự kiến', value: fmtDate(booking.checkOutDate) },
-      { label: 'Mã booking', value: String(booking._id) },
+      { label: 'Scheduled check-in', value: fmtDate(booking.checkInDate) },
+      { label: 'Scheduled check-out', value: fmtDate(booking.checkOutDate) },
+      { label: 'Booking ID', value: String(booking._id) },
     ],
-    note: 'Chúc bạn có một kỳ nghỉ thật thoải mái.',
+    note: 'We hope you enjoy your stay.',
   });
 
   const logContext = `bookingId=${booking._id}`;
@@ -240,18 +240,18 @@ exports.sendCheckInEmail = async (booking) => {
     logContext,
   });
   if (!result.ok) {
-    console.error(`[email] Gửi check-in thất bại, ${logContext}`);
+    console.error(`[email] Check-in email send failed, ${logContext}`);
     return { sent: false, reason: result.reason, error: result.error };
   }
   return { sent: true };
 };
 
 /**
- * @desc    Gửi email xác nhận đặt phòng
+ * @desc    Send booking confirmation email
  */
 exports.sendBookingConfirmation = async (booking) => {
   if (!booking) {
-    console.warn('[email] sendBookingConfirmation: booking là null/undefined, bỏ qua');
+    console.warn('[email] sendBookingConfirmation: booking is null/undefined, skipping');
     return { sent: false, reason: 'missing_booking' };
   }
 
@@ -267,42 +267,42 @@ exports.sendBookingConfirmation = async (booking) => {
 
   const roomLabel =
     booking.room && booking.room.roomNumber != null
-      ? `Phòng ${booking.room.roomNumber}`
+      ? `Room ${booking.room.roomNumber}`
       : '';
   const rt = booking.room && booking.room.roomType;
   const typeName =
     rt && (rt.typeName || rt.name) ? String(rt.typeName || rt.name) : '';
 
   const subject = roomLabel
-    ? `Xác nhận đặt phòng — ${roomLabel}`
-    : 'Xác nhận đặt phòng';
+    ? `Booking confirmation — ${roomLabel}`
+    : 'Booking confirmation';
   const text = [
-    `Chào ${guest.fullName},`,
+    `Hello ${guest.fullName},`,
     '',
-    `Đặt phòng của bạn đã được xác nhận.`,
-    `- ${roomLabel || '(phòng đang cập nhật)'}${typeName ? ` (${typeName})` : ''}`,
-    `- Check-in dự kiến: ${fmtDate(booking.checkInDate)}`,
-    `- Check-out dự kiến: ${fmtDate(booking.checkOutDate)}`,
-    `- Số khách: ${booking.numberOfGuests}`,
-    `- Tổng tiền: ${Number(booking.totalPrice).toLocaleString('vi-VN')} đ`,
-    `- Mã booking: ${booking._id}`,
+    `Your booking has been confirmed.`,
+    `- ${roomLabel || '(room TBD)'}${typeName ? ` (${typeName})` : ''}`,
+    `- Scheduled check-in: ${fmtDate(booking.checkInDate)}`,
+    `- Scheduled check-out: ${fmtDate(booking.checkOutDate)}`,
+    `- Guests: ${booking.numberOfGuests}`,
+    `- Total: ${Number(booking.totalPrice).toLocaleString('en-US')} VND`,
+    `- Booking ID: ${booking._id}`,
     '',
-    'Cảm ơn bạn đã chọn dịch vụ của chúng tôi.',
+    'Thank you for choosing us.',
   ].join('\n');
 
   const html = renderEmailLayout({
-    title: 'Xác nhận đặt phòng',
-    subtitle: roomLabel || 'Đặt phòng thành công',
-    intro: `Chào <strong>${escapeHtml(guest.fullName)}</strong>, đặt phòng của bạn đã được xác nhận.`,
+    title: 'Booking confirmation',
+    subtitle: roomLabel || 'Booking confirmed',
+    intro: `Hello <strong>${escapeHtml(guest.fullName)}</strong>, your booking has been confirmed.`,
     rows: [
-      { label: 'Phòng', value: `${roomLabel || 'Phòng (đang cập nhật)'}${typeName ? ` — ${typeName}` : ''}` },
-      { label: 'Check-in dự kiến', value: fmtDate(booking.checkInDate) },
-      { label: 'Check-out dự kiến', value: fmtDate(booking.checkOutDate) },
-      { label: 'Số khách', value: String(booking.numberOfGuests) },
-      { label: 'Tổng tiền', value: fmtCurrency(booking.totalPrice) },
-      { label: 'Mã booking', value: String(booking._id) },
+      { label: 'Room', value: `${roomLabel || 'Room (TBD)'}${typeName ? ` — ${typeName}` : ''}` },
+      { label: 'Scheduled check-in', value: fmtDate(booking.checkInDate) },
+      { label: 'Scheduled check-out', value: fmtDate(booking.checkOutDate) },
+      { label: 'Guests', value: String(booking.numberOfGuests) },
+      { label: 'Total', value: fmtCurrency(booking.totalPrice) },
+      { label: 'Booking ID', value: String(booking._id) },
     ],
-    note: 'Cảm ơn bạn đã chọn dịch vụ của chúng tôi.',
+    note: 'Thank you for choosing us.',
   });
 
   const logContext = `bookingId=${booking._id}`;
@@ -314,7 +314,7 @@ exports.sendBookingConfirmation = async (booking) => {
     logContext,
   });
   if (!result.ok) {
-    console.error(`[email] Gửi xác nhận đặt phòng thất bại, ${logContext}`);
+    console.error(`[email] Booking confirmation send failed, ${logContext}`);
     return { sent: false, reason: result.reason, error: result.error };
   }
   return { sent: true };
@@ -322,7 +322,7 @@ exports.sendBookingConfirmation = async (booking) => {
 
 const sendInvoiceMailWithType = async ({ invoice, mailType }) => {
   if (!invoice) {
-    console.warn('[email] sendInvoiceMailWithType: invoice là null/undefined, bỏ qua');
+    console.warn('[email] sendInvoiceMailWithType: invoice is null/undefined, skipping');
     return { sent: false, reason: 'missing_invoice' };
   }
 
@@ -341,48 +341,48 @@ const sendInvoiceMailWithType = async ({ invoice, mailType }) => {
 
   const guest = b.guest;
   const roomLabel =
-    b.room && b.room.roomNumber != null ? `Phòng ${b.room.roomNumber}` : '';
+    b.room && b.room.roomNumber != null ? `Room ${b.room.roomNumber}` : '';
   const isPaymentSuccess = mailType === 'payment_success';
 
   const subject = isPaymentSuccess
-    ? `Thanh toán thành công #${invoice.invoiceId}`
-    : `Xác nhận check-out #${invoice.invoiceId}`;
+    ? `Payment successful #${invoice.invoiceId}`
+    : `Check-out confirmation #${invoice.invoiceId}`;
   const text = [
-    `Chào ${guest.fullName},`,
+    `Hello ${guest.fullName},`,
     '',
-    isPaymentSuccess ? 'Thanh toán của bạn đã thành công.' : 'Bạn đã check-out thành công, hóa đơn đã được tạo.',
-    `Mã hóa đơn: ${invoice.invoiceId}`,
-    `- Tổng tiền: ${Number(invoice.totalAmount).toLocaleString('vi-VN')} đ`,
-    `- Trạng thái thanh toán: ${isPaymentSuccess ? 'paid' : invoice.paymentStatus}`,
-    isPaymentSuccess ? `- Phương thức thanh toán: ${paymentMethodLabel(invoice.paymentMethod)}` : '',
-    `- Ngày lập: ${fmtDate(invoice.issueDate)}`,
+    isPaymentSuccess ? 'Your payment was successful.' : 'You have successfully checked out; your invoice has been created.',
+    `Invoice ID: ${invoice.invoiceId}`,
+    `- Total: ${Number(invoice.totalAmount).toLocaleString('en-US')} VND`,
+    `- Payment status: ${isPaymentSuccess ? 'paid' : invoice.paymentStatus}`,
+    isPaymentSuccess ? `- Payment method: ${paymentMethodLabel(invoice.paymentMethod)}` : '',
+    `- Issue date: ${fmtDate(invoice.issueDate)}`,
     roomLabel ? `- ${roomLabel}` : '',
     b.checkInDate ? `- Check-in: ${fmtDate(b.checkInDate)}` : '',
     b.checkOutDate ? `- Check-out: ${fmtDate(b.checkOutDate)}` : '',
     '',
-    'Cảm ơn bạn đã lưu trú tại khách sạn.',
+    'Thank you for staying with us.',
   ]
     .filter(Boolean)
     .join('\n');
 
   const html = `
     ${renderEmailLayout({
-      title: isPaymentSuccess ? 'Thanh toán thành công' : 'Xác nhận check-out',
-      subtitle: `Hóa đơn ${String(invoice.invoiceId)}`,
-      intro: `Chào <strong>${escapeHtml(guest.fullName)}</strong>, ${
-        isPaymentSuccess ? 'chúng tôi đã nhận được thanh toán của bạn.' : 'quá trình check-out đã hoàn tất và hóa đơn đã được tạo.'
+      title: isPaymentSuccess ? 'Payment successful' : 'Check-out confirmation',
+      subtitle: `Invoice ${String(invoice.invoiceId)}`,
+      intro: `Hello <strong>${escapeHtml(guest.fullName)}</strong>, ${
+        isPaymentSuccess ? 'we have received your payment.' : 'check-out is complete and your invoice has been created.'
       }`,
       rows: [
-        { label: 'Mã hóa đơn', value: String(invoice.invoiceId) },
-        { label: 'Tổng tiền', value: fmtCurrency(invoice.totalAmount) },
-        { label: 'Trạng thái', value: isPaymentSuccess ? 'Đã thanh toán' : String(invoice.paymentStatus) },
-        ...(isPaymentSuccess ? [{ label: 'Phương thức', value: paymentMethodLabel(invoice.paymentMethod) }] : []),
-        { label: 'Ngày lập', value: fmtDate(invoice.issueDate) },
-        ...(roomLabel ? [{ label: 'Phòng', value: roomLabel }] : []),
+        { label: 'Invoice ID', value: String(invoice.invoiceId) },
+        { label: 'Total', value: fmtCurrency(invoice.totalAmount) },
+        { label: 'Status', value: isPaymentSuccess ? 'Paid' : String(invoice.paymentStatus) },
+        ...(isPaymentSuccess ? [{ label: 'Method', value: paymentMethodLabel(invoice.paymentMethod) }] : []),
+        { label: 'Issue date', value: fmtDate(invoice.issueDate) },
+        ...(roomLabel ? [{ label: 'Room', value: roomLabel }] : []),
         ...(b.checkInDate ? [{ label: 'Check-in', value: fmtDate(b.checkInDate) }] : []),
         ...(b.checkOutDate ? [{ label: 'Check-out', value: fmtDate(b.checkOutDate) }] : []),
       ],
-      note: 'Cảm ơn bạn đã lưu trú tại khách sạn.',
+      note: 'Thank you for staying with us.',
     })}
   `;
 
@@ -395,7 +395,7 @@ const sendInvoiceMailWithType = async ({ invoice, mailType }) => {
     logContext,
   });
   if (!result.ok) {
-    console.error(`[email] Gửi email hóa đơn thất bại, ${logContext}`);
+    console.error(`[email] Invoice email send failed, ${logContext}`);
     return { sent: false, reason: result.reason, error: result.error };
   }
   return { sent: true };
@@ -424,32 +424,32 @@ exports.sendCheckInReminderEmail = async (booking) => {
 
   const roomLabel =
     booking.room && booking.room.roomNumber != null
-      ? `Phòng ${booking.room.roomNumber}`
-      : 'Phòng (đang cập nhật)';
+      ? `Room ${booking.room.roomNumber}`
+      : 'Room (TBD)';
   const roomType = booking.room?.roomType?.typeName || booking.room?.roomType?.name || '';
 
-  const subject = `Nhắc lịch check-in — ${roomLabel}`;
+  const subject = `Check-in reminder — ${roomLabel}`;
   const text = [
-    `Chào ${guest.fullName},`,
+    `Hello ${guest.fullName},`,
     '',
-    'Đây là email nhắc lịch check-in sắp tới của bạn.',
-    `- Phòng: ${roomLabel}${roomType ? ` (${roomType})` : ''}`,
-    `- Check-in dự kiến: ${fmtDate(booking.checkInDate)}`,
-    `- Check-out dự kiến: ${fmtDate(booking.checkOutDate)}`,
-    `- Mã booking: ${booking._id}`,
+    'This is a reminder about your upcoming check-in.',
+    `- Room: ${roomLabel}${roomType ? ` (${roomType})` : ''}`,
+    `- Scheduled check-in: ${fmtDate(booking.checkInDate)}`,
+    `- Scheduled check-out: ${fmtDate(booking.checkOutDate)}`,
+    `- Booking ID: ${booking._id}`,
   ].join('\n');
 
   const html = renderEmailLayout({
-    title: 'Nhắc lịch check-in',
+    title: 'Check-in reminder',
     subtitle: roomLabel,
-    intro: `Chào <strong>${escapeHtml(guest.fullName)}</strong>, lịch check-in của bạn sắp diễn ra.`,
+    intro: `Hello <strong>${escapeHtml(guest.fullName)}</strong>, your check-in is coming up.`,
     rows: [
-      { label: 'Phòng', value: `${roomLabel}${roomType ? ` — ${roomType}` : ''}` },
-      { label: 'Check-in dự kiến', value: fmtDate(booking.checkInDate) },
-      { label: 'Check-out dự kiến', value: fmtDate(booking.checkOutDate) },
-      { label: 'Mã booking', value: String(booking._id) },
+      { label: 'Room', value: `${roomLabel}${roomType ? ` — ${roomType}` : ''}` },
+      { label: 'Scheduled check-in', value: fmtDate(booking.checkInDate) },
+      { label: 'Scheduled check-out', value: fmtDate(booking.checkOutDate) },
+      { label: 'Booking ID', value: String(booking._id) },
     ],
-    note: 'Nếu bạn cần thay đổi thời gian, vui lòng liên hệ lễ tân sớm để được hỗ trợ.',
+    note: 'If you need to change your schedule, please contact the front desk as soon as possible.',
   });
 
   const logContext = `bookingId=${booking._id}`;
@@ -477,29 +477,29 @@ exports.sendCheckOutReminderEmail = async (booking) => {
 
   const roomLabel =
     booking.room && booking.room.roomNumber != null
-      ? `Phòng ${booking.room.roomNumber}`
-      : 'Phòng (đang cập nhật)';
+      ? `Room ${booking.room.roomNumber}`
+      : 'Room (TBD)';
 
-  const subject = `Nhắc lịch check-out — ${roomLabel}`;
+  const subject = `Check-out reminder — ${roomLabel}`;
   const text = [
-    `Chào ${guest.fullName},`,
+    `Hello ${guest.fullName},`,
     '',
-    'Đây là email nhắc lịch check-out sắp tới của bạn.',
-    `- Phòng: ${roomLabel}`,
-    `- Check-out dự kiến: ${fmtDate(booking.checkOutDate)}`,
-    `- Mã booking: ${booking._id}`,
+    'This is a reminder about your upcoming check-out.',
+    `- Room: ${roomLabel}`,
+    `- Scheduled check-out: ${fmtDate(booking.checkOutDate)}`,
+    `- Booking ID: ${booking._id}`,
   ].join('\n');
 
   const html = renderEmailLayout({
-    title: 'Nhắc lịch check-out',
+    title: 'Check-out reminder',
     subtitle: roomLabel,
-    intro: `Chào <strong>${escapeHtml(guest.fullName)}</strong>, thời gian check-out của bạn sắp đến.`,
+    intro: `Hello <strong>${escapeHtml(guest.fullName)}</strong>, your check-out time is approaching.`,
     rows: [
-      { label: 'Phòng', value: roomLabel },
-      { label: 'Check-out dự kiến', value: fmtDate(booking.checkOutDate) },
-      { label: 'Mã booking', value: String(booking._id) },
+      { label: 'Room', value: roomLabel },
+      { label: 'Scheduled check-out', value: fmtDate(booking.checkOutDate) },
+      { label: 'Booking ID', value: String(booking._id) },
     ],
-    note: 'Vui lòng liên hệ lễ tân nếu bạn cần hỗ trợ gia hạn thêm thời gian lưu trú.',
+    note: 'Please contact the front desk if you need a late check-out or extension.',
   });
 
   const logContext = `bookingId=${booking._id}`;

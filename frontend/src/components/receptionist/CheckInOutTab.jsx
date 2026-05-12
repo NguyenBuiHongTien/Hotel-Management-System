@@ -26,7 +26,7 @@ const CheckInOutTab = () => {
 
   const today = toLocalDateKey(new Date());
 
-  // Auto-refresh mỗi 30 giây để đồng bộ
+  // Auto-refresh every 30s to stay in sync
   useEffect(() => {
     const interval = setInterval(() => {
       if (!showDetailModal && !isProcessing) {
@@ -104,16 +104,16 @@ const CheckInOutTab = () => {
     const booking = bookings.find(b => b._id === bookingId);
     if (!booking) return;
 
-    const confirmMsg = `Xác nhận check-in cho:\n- Khách: ${booking.guest?.fullName || 'N/A'}\n- Phòng: ${booking.room?.roomNumber || 'N/A'}\n- Ngày: ${new Date(booking.checkInDate).toLocaleDateString('vi-VN')}`;
+    const confirmMsg = `Confirm check-in for:\n- Guest: ${booking.guest?.fullName || 'N/A'}\n- Room: ${booking.room?.roomNumber || 'N/A'}\n- Date: ${new Date(booking.checkInDate).toLocaleDateString('en-US')}`;
     
     if (window.confirm(confirmMsg)) {
       setIsProcessing(true);
       try {
         await bookingService.checkIn(bookingId);
-        alert('Check-in thành công! Phòng đã chuyển sang trạng thái "Đang có khách".');
+        alert('Check-in successful! The room is now marked as occupied.');
         await refetch();
       } catch (err) {
-        alert('Lỗi: ' + (err.message || 'Không thể check-in'));
+        alert('Error: ' + (err.message || 'Could not check in'));
       } finally {
         setIsProcessing(false);
       }
@@ -124,17 +124,17 @@ const CheckInOutTab = () => {
     const booking = bookings.find(b => b._id === bookingId);
     if (!booking) return;
 
-    const confirmMsg = `Xác nhận check-out cho:\n- Khách: ${booking.guest?.fullName || 'N/A'}\n- Phòng: ${booking.room?.roomNumber || 'N/A'}\n- Ngày: ${new Date(booking.checkOutDate).toLocaleDateString('vi-VN')}\n\nPhòng sẽ chuyển sang trạng thái "Cần dọn" và hóa đơn sẽ được tạo tự động.`;
+    const confirmMsg = `Confirm check-out for:\n- Guest: ${booking.guest?.fullName || 'N/A'}\n- Room: ${booking.room?.roomNumber || 'N/A'}\n- Date: ${new Date(booking.checkOutDate).toLocaleDateString('en-US')}\n\nThe room will be set to "Needs cleaning" and an invoice will be created automatically.`;
     
     if (window.confirm(confirmMsg)) {
       setIsProcessing(true);
       try {
         const result = await bookingService.checkOut(bookingId);
         const amount = result.data?.invoice?.totalAmount ?? booking.totalPrice ?? 0;
-        alert(`Check-out thành công!\nHóa đơn đã được tạo.\nTổng tiền: ₫${Number(amount).toLocaleString()}`);
+        alert(`Check-out successful!\nInvoice created.\nTotal: ₫${Number(amount).toLocaleString('en-US')}`);
         await refetch();
       } catch (err) {
-        alert('Lỗi: ' + (err.message || 'Không thể check-out'));
+        alert('Error: ' + (err.message || 'Could not check out'));
       } finally {
         setIsProcessing(false);
       }
@@ -143,118 +143,103 @@ const CheckInOutTab = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div className={styles.flexBetween}>
         <h2 className={styles.sectionTitle}>Check-in & Check-out</h2>
         <button
+          type="button"
           className={`${buttonStyles.base} ${buttonStyles.secondary} ${buttonStyles.sm}`}
           onClick={refetch}
-          title="Làm mới dữ liệu"
+          title="Refresh data"
         >
-          <RefreshCw size={16} style={{ marginRight: '0.25rem' }} />
-          Làm mới
+          <RefreshCw size={16} aria-hidden />
+          Refresh
         </button>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+      <div className={styles.toolbarRowStart}>
         <button
+          type="button"
           className={`${buttonStyles.base} ${buttonStyles.secondary} ${buttonStyles.md} ${activeView === 'checkin' ? buttonStyles.primary : ''}`}
           onClick={() => setActiveView('checkin')}
         >
-          <CheckCircle size={18} style={{ marginRight: '0.5rem' }} />
+          <CheckCircle size={18} aria-hidden />
           Check-in ({checkInsAvailable.length})
         </button>
         <button
+          type="button"
           className={`${buttonStyles.base} ${buttonStyles.secondary} ${buttonStyles.md} ${activeView === 'checkout' ? buttonStyles.primary : ''}`}
           onClick={() => setActiveView('checkout')}
         >
-          <XCircle size={18} style={{ marginRight: '0.5rem' }} />
+          <XCircle size={18} aria-hidden />
           Check-out ({checkOutsAvailable.length})
         </button>
       </div>
 
-      {/* Filters */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-        gap: '1rem', 
-        marginBottom: '1.5rem',
-        background: 'white',
-        padding: '1rem',
-        borderRadius: '0.5rem',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-      }}>
-        <div style={{ position: 'relative' }}>
-          <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-          <input
-            type="text"
-            placeholder="Tìm theo tên, số phòng, SĐT..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '0.5rem 1rem 0.5rem 2.5rem',
-              borderRadius: '0.375rem',
-              border: '1px solid #d1d5db',
-              fontSize: '0.875rem'
-            }}
-          />
+      <div className={styles.filterBar}>
+        <div>
+          <label htmlFor="cio-search">Search</label>
+          <div className={styles.searchInputWrap}>
+            <Search size={18} className={styles.searchIcon} aria-hidden />
+            <input
+              id="cio-search"
+              type="text"
+              className={styles.searchField}
+              placeholder="Search by name, room, or phone..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </div>
         <div>
+          <label htmlFor="cio-date-filter">Date range</label>
           <select
+            id="cio-date-filter"
+            className={styles.formInputDark}
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '0.5rem 1rem',
-              borderRadius: '0.375rem',
-              border: '1px solid #d1d5db',
-              fontSize: '0.875rem'
-            }}
           >
-            <option value="all">Tất cả ngày</option>
-            <option value="today">Hôm nay</option>
-            <option value="upcoming">Sắp tới</option>
+            <option value="all">All dates</option>
+            <option value="today">Today</option>
+            <option value="upcoming">Upcoming</option>
           </select>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className={`${styles.grid} ${styles.grid2}`} style={{ marginBottom: '1.5rem' }}>
-        <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Có thể check-in</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#22c55e' }}>{checkInsAvailable.length}</div>
+      <div className={`${styles.grid} ${styles.grid2} ${styles.mbLg}`}>
+        <div className={styles.miniStatCard}>
+          <div className={styles.miniStatLabel}>Ready for check-in</div>
+          <div className={styles.miniStatValueGreen}>{checkInsAvailable.length}</div>
         </div>
-        <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Có thể check-out</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#ef4444' }}>{checkOutsAvailable.length}</div>
+        <div className={styles.miniStatCard}>
+          <div className={styles.miniStatLabel}>Ready for check-out</div>
+          <div className={styles.miniStatValueDanger}>{checkOutsAvailable.length}</div>
         </div>
       </div>
 
       {/* Check-in Section */}
       {activeView === 'checkin' && (
-        <div style={{ background: 'white', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '1.5rem' }}>
-          <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1f2937', marginBottom: '1rem', display: 'flex', alignItems: 'center' }}>
-            <CheckCircle className="text-green-600" size={24} style={{ marginRight: '0.5rem' }} /> 
-            Danh sách check-in ({checkInsAvailable.length})
+        <div className={styles.checkinColumnPanel}>
+          <h3 className={styles.checkinColumnTitle}>
+            <CheckCircle size={24} className={styles.titleIconSuccess} aria-hidden />
+            Check-in list ({checkInsAvailable.length})
           </h3>
           {checkInsAvailable.length === 0 ? (
-            <p style={{ color: '#6b7280', fontStyle: 'italic', textAlign: 'center', padding: '2rem' }}>
-              Không có đặt phòng nào cần check-in
+            <p className={styles.checkinEmpty}>
+              No bookings awaiting check-in
             </p>
           ) : (
             <div className={tableStyles.tableContainer}>
               <table className={tableStyles.table}>
                 <thead>
                   <tr>
-                    <th className={tableStyles.th}>Khách hàng</th>
-                    <th className={tableStyles.th}>SĐT</th>
-                    <th className={tableStyles.th}>Phòng</th>
+                    <th className={tableStyles.th}>Guest</th>
+                    <th className={tableStyles.th}>Phone</th>
+                    <th className={tableStyles.th}>Room</th>
                     <th className={tableStyles.th}>Check-in</th>
                     <th className={tableStyles.th}>Check-out</th>
-                    <th className={tableStyles.th}>Số khách</th>
-                    <th className={tableStyles.th}>Tổng tiền</th>
-                    <th className={tableStyles.th}>Thao tác</th>
+                    <th className={tableStyles.th}>Guests</th>
+                    <th className={tableStyles.th}>Total</th>
+                    <th className={tableStyles.th}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -263,26 +248,27 @@ const CheckInOutTab = () => {
                       <td className={tableStyles.td}>{booking.guest?.fullName || 'N/A'}</td>
                       <td className={tableStyles.td}>{booking.guest?.phoneNumber || '—'}</td>
                       <td className={tableStyles.td}>
-                        <strong>Phòng {booking.room?.roomNumber || 'N/A'}</strong>
+                        <strong>Room {booking.room?.roomNumber || 'N/A'}</strong>
                       </td>
                       <td className={tableStyles.td}>
-                        {new Date(booking.checkInDate).toLocaleDateString('vi-VN')}
+                        {new Date(booking.checkInDate).toLocaleDateString('en-US')}
                       </td>
                       <td className={tableStyles.td}>
-                        {new Date(booking.checkOutDate).toLocaleDateString('vi-VN')}
+                        {new Date(booking.checkOutDate).toLocaleDateString('en-US')}
                       </td>
                       <td className={tableStyles.td}>{booking.numberOfGuests || 1}</td>
                       <td className={tableStyles.td}>
-                        ₫{Number(booking.totalPrice || 0).toLocaleString()}
+                        ₫{Number(booking.totalPrice || 0).toLocaleString('en-US')}
                       </td>
                       <td className={tableStyles.td}>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <div className={styles.rowActions}>
                           <button
+                            type="button"
                             className={`${buttonStyles.primary} ${buttonStyles.sm}`}
                             onClick={() => handleCheckIn(booking._id)}
                             disabled={isProcessing}
                           >
-                            <CheckCircle size={14} style={{ marginRight: '0.25rem' }} />
+                            <CheckCircle size={14} aria-hidden />
                             Check-in
                           </button>
                           <button
@@ -291,7 +277,7 @@ const CheckInOutTab = () => {
                               setSelectedBooking(booking);
                               setShowDetailModal(true);
                             }}
-                            title="Xem chi tiết"
+                            title="View details"
                           >
                             <Eye size={14} />
                           </button>
@@ -308,28 +294,28 @@ const CheckInOutTab = () => {
 
       {/* Check-out Section */}
       {activeView === 'checkout' && (
-        <div style={{ background: 'white', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', padding: '1.5rem' }}>
-          <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#1f2937', marginBottom: '1rem', display: 'flex', alignItems: 'center' }}>
-            <XCircle className="text-red-600" size={24} style={{ marginRight: '0.5rem' }} /> 
-            Danh sách check-out ({checkOutsAvailable.length})
+        <div className={styles.checkinColumnPanel}>
+          <h3 className={styles.checkinColumnTitle}>
+            <XCircle size={24} className={styles.titleIconDanger} aria-hidden />
+            Check-out list ({checkOutsAvailable.length})
           </h3>
           {checkOutsAvailable.length === 0 ? (
-            <p style={{ color: '#6b7280', fontStyle: 'italic', textAlign: 'center', padding: '2rem' }}>
-              Không có đặt phòng nào cần check-out
+            <p className={styles.checkinEmpty}>
+              No bookings awaiting check-out
             </p>
           ) : (
             <div className={tableStyles.tableContainer}>
               <table className={tableStyles.table}>
                 <thead>
                   <tr>
-                    <th className={tableStyles.th}>Khách hàng</th>
-                    <th className={tableStyles.th}>SĐT</th>
-                    <th className={tableStyles.th}>Phòng</th>
+                    <th className={tableStyles.th}>Guest</th>
+                    <th className={tableStyles.th}>Phone</th>
+                    <th className={tableStyles.th}>Room</th>
                     <th className={tableStyles.th}>Check-in</th>
                     <th className={tableStyles.th}>Check-out</th>
-                    <th className={tableStyles.th}>Số khách</th>
-                    <th className={tableStyles.th}>Tổng tiền</th>
-                    <th className={tableStyles.th}>Thao tác</th>
+                    <th className={tableStyles.th}>Guests</th>
+                    <th className={tableStyles.th}>Total</th>
+                    <th className={tableStyles.th}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -338,27 +324,27 @@ const CheckInOutTab = () => {
                       <td className={tableStyles.td}>{booking.guest?.fullName || 'N/A'}</td>
                       <td className={tableStyles.td}>{booking.guest?.phoneNumber || '—'}</td>
                       <td className={tableStyles.td}>
-                        <strong>Phòng {booking.room?.roomNumber || 'N/A'}</strong>
+                        <strong>Room {booking.room?.roomNumber || 'N/A'}</strong>
                       </td>
                       <td className={tableStyles.td}>
-                        {new Date(booking.checkInDate).toLocaleDateString('vi-VN')}
+                        {new Date(booking.checkInDate).toLocaleDateString('en-US')}
                       </td>
                       <td className={tableStyles.td}>
-                        {new Date(booking.checkOutDate).toLocaleDateString('vi-VN')}
+                        {new Date(booking.checkOutDate).toLocaleDateString('en-US')}
                       </td>
                       <td className={tableStyles.td}>{booking.numberOfGuests || 1}</td>
                       <td className={tableStyles.td}>
-                        ₫{Number(booking.totalPrice || 0).toLocaleString()}
+                        ₫{Number(booking.totalPrice || 0).toLocaleString('en-US')}
                       </td>
                       <td className={tableStyles.td}>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <div className={styles.rowActions}>
                           <button
-                            className={`${buttonStyles.primary} ${buttonStyles.sm}`}
-                            style={{ background: '#dc2626' }}
+                            type="button"
+                            className={styles.btnDangerSolid}
                             onClick={() => handleCheckOut(booking._id)}
                             disabled={isProcessing}
                           >
-                            <XCircle size={14} style={{ marginRight: '0.25rem' }} />
+                            <XCircle size={14} aria-hidden />
                             Check-out
                           </button>
                           <button
@@ -367,7 +353,7 @@ const CheckInOutTab = () => {
                               setSelectedBooking(booking);
                               setShowDetailModal(true);
                             }}
-                            title="Xem chi tiết"
+                            title="View details"
                           >
                             <Eye size={14} />
                           </button>
@@ -385,51 +371,52 @@ const CheckInOutTab = () => {
       {/* Booking Detail Modal */}
       {showDetailModal && selectedBooking && (
         <div className={styles.modalOverlay} onClick={() => setShowDetailModal(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
-            <h2>Chi tiết đặt phòng</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+          <div className={`${styles.modal} ${styles.modalMax600}`} onClick={(e) => e.stopPropagation()}>
+            <h2 className={styles.modalFormTitle}>Booking details</h2>
+            <div className={styles.modalFormStack}>
               <div>
-                <strong>Khách hàng:</strong> {selectedBooking.guest?.fullName || 'N/A'}
+                <strong>Guest:</strong> {selectedBooking.guest?.fullName || 'N/A'}
               </div>
               <div>
-                <strong>Số điện thoại:</strong> {selectedBooking.guest?.phoneNumber || '—'}
+                <strong>Phone:</strong> {selectedBooking.guest?.phoneNumber || '—'}
               </div>
               <div>
                 <strong>Email:</strong> {selectedBooking.guest?.email || '—'}
               </div>
               <div>
-                <strong>Phòng:</strong> {selectedBooking.room?.roomNumber || 'N/A'} 
+                <strong>Room:</strong> {selectedBooking.room?.roomNumber || 'N/A'} 
                 {selectedBooking.room?.roomType && ` (${selectedBooking.room.roomType.typeName})`}
               </div>
               <div>
-                <strong>Check-in:</strong> {new Date(selectedBooking.checkInDate).toLocaleDateString('vi-VN')}
+                <strong>Check-in:</strong> {new Date(selectedBooking.checkInDate).toLocaleDateString('en-US')}
               </div>
               <div>
-                <strong>Check-out:</strong> {new Date(selectedBooking.checkOutDate).toLocaleDateString('vi-VN')}
+                <strong>Check-out:</strong> {new Date(selectedBooking.checkOutDate).toLocaleDateString('en-US')}
               </div>
               <div>
-                <strong>Số khách:</strong> {selectedBooking.numberOfGuests || 1}
+                <strong>Guests:</strong> {selectedBooking.numberOfGuests || 1}
               </div>
               <div>
-                <strong>Tổng tiền:</strong> ₫{Number(selectedBooking.totalPrice || 0).toLocaleString()}
+                <strong>Total:</strong> ₫{Number(selectedBooking.totalPrice || 0).toLocaleString('en-US')}
               </div>
               <div>
-                <strong>Trạng thái:</strong>
+                <strong>Status:</strong>
                 <span className={`${badgeStyles.badge} ${
                   selectedBooking.status === 'confirmed' ? badgeStyles.info :
                   selectedBooking.status === 'checked_in' ? badgeStyles.success :
                   selectedBooking.status === 'checked_out' ? badgeStyles.secondary : ''
-                }`} style={{ marginLeft: '0.5rem' }}>
-                  {selectedBooking.status === 'confirmed' ? 'Đã xác nhận' :
-                   selectedBooking.status === 'checked_in' ? 'Đã check-in' :
-                   selectedBooking.status === 'checked_out' ? 'Đã check-out' :
-                   selectedBooking.status === 'cancelled' ? 'Đã hủy' : selectedBooking.status}
+                } ${styles.badgeSpacer}`}>
+                  {selectedBooking.status === 'confirmed' ? 'Confirmed' :
+                   selectedBooking.status === 'checked_in' ? 'Checked in' :
+                   selectedBooking.status === 'checked_out' ? 'Checked out' :
+                   selectedBooking.status === 'cancelled' ? 'Cancelled' : selectedBooking.status}
                 </span>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+            <div className={styles.modalFooterBar}>
               {selectedBooking.status === 'confirmed' && (
                 <button
+                  type="button"
                   className={`${buttonStyles.primary} ${buttonStyles.md}`}
                   onClick={() => {
                     setShowDetailModal(false);
@@ -442,8 +429,8 @@ const CheckInOutTab = () => {
               )}
               {selectedBooking.status === 'checked_in' && (
                 <button
-                  className={`${buttonStyles.primary} ${buttonStyles.md}`}
-                  style={{ background: '#dc2626' }}
+                  type="button"
+                  className={styles.btnDangerSolid}
                   onClick={() => {
                     setShowDetailModal(false);
                     handleCheckOut(selectedBooking._id);
@@ -454,13 +441,14 @@ const CheckInOutTab = () => {
                 </button>
               )}
               <button
+                type="button"
                 className={`${buttonStyles.secondary} ${buttonStyles.md}`}
                 onClick={() => {
                   setShowDetailModal(false);
                   setSelectedBooking(null);
                 }}
               >
-                Đóng
+                Close
               </button>
             </div>
           </div>

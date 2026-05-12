@@ -8,6 +8,7 @@ import badgeStyles from '../styles/Badge.module.css';
 import buttonStyles from '../styles/Button.module.css';
 import { roomService } from '../services/roomService';
 import maintenanceService from '../services/maintenanceService';
+import { asArray } from '../utils/apiNormalize';
 
 const HousekeepingDashboard = ({ onLogout }) => {
   const [stats, setStats] = useState({
@@ -25,28 +26,27 @@ const HousekeepingDashboard = ({ onLogout }) => {
   const [reportText, setReportText] = useState('');
   const [newStatus, setNewStatus] = useState('');
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState('cleaning'); // 'cleaning' or 'all'
+  const [activeView, setActiveView] = useState('cleaning');
   const [statusFilter, setStatusFilter] = useState('all');
   const quickFilters = [
-    { key: 'all', label: 'Tất cả' },
-    { key: 'dirty', label: 'Cần dọn' },
-    { key: 'cleaning', label: 'Đang dọn' },
-    { key: 'maintenance', label: 'Bảo trì' },
-    { key: 'occupied', label: 'Đang có khách' },
-    { key: 'available', label: 'Sẵn sàng' },
+    { key: 'all', label: 'All' },
+    { key: 'dirty', label: 'Needs cleaning' },
+    { key: 'cleaning', label: 'Cleaning' },
+    { key: 'maintenance', label: 'Maintenance' },
+    { key: 'occupied', label: 'Occupied' },
+    { key: 'available', label: 'Ready' },
   ];
 
-  // Load stats + danh sách phòng
   const fetchData = async () => {
     try {
       setLoading(true);
 
-      // 1. Stats tổng quan - Sử dụng getAllRooms thay vì getRealtimeRoomStatus (housekeeper không có quyền)
+      // 1. Stats — use getAllRooms (housekeeper may not have realtime status permission)
       try {
         const allRoomsData = await roomService.getAllRooms();
-        const roomsArray = Array.isArray(allRoomsData) ? allRoomsData : (allRoomsData.data || []);
+        const roomsArray = asArray(allRoomsData, 'rooms');
         setAllRooms(roomsArray);
-        
+
         const map = {};
         roomsArray.forEach(room => {
           const status = room.status || 'unknown';
@@ -70,17 +70,16 @@ const HousekeepingDashboard = ({ onLogout }) => {
         });
       }
 
-      // 2. Danh sách phòng cần dọn
       try {
         const rooms = await roomService.getCleaningRooms();
-        setCleaningRooms(Array.isArray(rooms) ? rooms : (rooms.data || []));
+        setCleaningRooms(asArray(rooms, 'rooms'));
       } catch (err) {
         console.warn('Could not load cleaning rooms:', err);
         setCleaningRooms([]);
       }
     } catch (err) {
       console.error('Error loading housekeeping data:', err);
-      alert('Không tải được dữ liệu dọn phòng. Vui lòng thử lại hoặc kiểm tra backend.');
+      alert('Could not load housekeeping data. Please try again or check the backend.');
     } finally {
       setLoading(false);
     }
@@ -88,8 +87,7 @@ const HousekeepingDashboard = ({ onLogout }) => {
 
   useEffect(() => {
     fetchData();
-    
-    // Auto-refresh mỗi 30 giây để đồng bộ trạng thái
+
     const interval = setInterval(() => {
       fetchData();
     }, 30000);
@@ -97,38 +95,32 @@ const HousekeepingDashboard = ({ onLogout }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Cập nhật trạng thái phòng
   const handleUpdateStatus = async (room, status) => {
     try {
       const id = room._id || room.roomId || room.id;
       await roomService.updateRoomStatus(id, status);
-      alert(`Đã cập nhật trạng thái phòng ${room.roomNumber || room.number} thành "${getStatusLabel(status)}".`);
-      // Refresh data để đồng bộ
+      alert(`Room ${room.roomNumber || room.number} status updated to "${getStatusLabel(status)}".`);
       await fetchData();
     } catch (err) {
       console.error(err);
-      alert('Không thể cập nhật trạng thái phòng: ' + (err.message || ''));
+      alert('Could not update room status: ' + (err.message || ''));
     }
   };
 
-  // Bắt đầu dọn phòng
   const handleStartCleaning = async (room) => {
     await handleUpdateStatus(room, 'cleaning');
   };
 
-  // Hoàn tất dọn phòng
   const handleFinishCleaning = async (room) => {
     await handleUpdateStatus(room, 'available');
   };
 
-  // Mở modal cập nhật trạng thái
   const handleOpenStatusModal = (room) => {
     setSelectedRoom(room);
     setNewStatus(room.status || '');
     setShowStatusModal(true);
   };
 
-  // Xác nhận cập nhật trạng thái
   const handleConfirmStatusUpdate = async () => {
     if (!selectedRoom || !newStatus) return;
     await handleUpdateStatus(selectedRoom, newStatus);
@@ -137,22 +129,20 @@ const HousekeepingDashboard = ({ onLogout }) => {
     setNewStatus('');
   };
 
-  // Helper function để lấy label trạng thái
   const getStatusLabel = (status) => {
     const labels = {
-      'available': 'Sẵn sàng',
-      'occupied': 'Đang có khách',
-      'dirty': 'Cần dọn',
-      'cleaning': 'Đang dọn',
-      'maintenance': 'Bảo trì'
+      'available': 'Ready',
+      'occupied': 'Occupied',
+      'dirty': 'Needs cleaning',
+      'cleaning': 'Cleaning',
+      'maintenance': 'Maintenance'
     };
     return labels[status] || status;
   };
 
-  // Gửi báo cáo bảo trì
   const handleSubmitReport = async () => {
     if (!selectedRoom || !reportText.trim()) {
-      alert('Vui lòng nhập mô tả sự cố.');
+      alert('Please describe the issue.');
       return;
     }
     try {
@@ -161,15 +151,14 @@ const HousekeepingDashboard = ({ onLogout }) => {
         description: reportText.trim(),
         priority: 'medium',
       });
-      alert('Đã gửi báo cáo bảo trì. Phòng sẽ tự động chuyển sang trạng thái "Bảo trì".');
+      alert('Maintenance report sent. The room has been set to maintenance.');
       setReportText('');
       setShowReportModal(false);
       setSelectedRoom(null);
-      // Refresh để cập nhật trạng thái phòng
       await fetchData();
     } catch (err) {
       console.error(err);
-      alert('Không thể gửi báo cáo bảo trì.');
+      alert('Could not send maintenance report.');
     }
   };
 
@@ -185,35 +174,22 @@ const HousekeepingDashboard = ({ onLogout }) => {
       <NavBar title="Housekeeping Dashboard" icon={Users} onLogout={onLogout} />
 
       <div className={styles.content}>
-        {/* --------------------------------------------------- */}
-        {/* 1. ROOM STATUS SUMMARY */}
-        {/* --------------------------------------------------- */}
-        <h2 className={styles.sectionTitle}>Tổng quan trạng thái phòng</h2>
+        <h2 className={styles.sectionTitle}>Room status overview</h2>
         <div className={styles.grid}>
           {[
-            { label: 'Cần dọn', count: stats.dirty, color: '#ef4444' },
-            { label: 'Đang dọn', count: stats.cleaning, color: '#f97316' },
-            { label: 'Sẵn sàng', count: stats.ready, color: '#22c55e' },
-            { label: 'Đang bảo trì', count: stats.maintenance, color: '#eab308' },
-            { label: 'Đang có khách', count: stats.occupied, color: '#3b82f6' },
+            { label: 'Needs cleaning', count: stats.dirty, color: '#ef4444' },
+            { label: 'Cleaning', count: stats.cleaning, color: '#f97316' },
+            { label: 'Ready', count: stats.ready, color: '#22c55e' },
+            { label: 'Maintenance', count: stats.maintenance, color: '#eab308' },
+            { label: 'Occupied', count: stats.occupied, color: '#3b82f6' },
           ].map((item, i) => (
-            <div
-              key={i}
-              style={{
-                background: 'white',
-                padding: '1rem',
-                borderRadius: '0.5rem',
-                textAlign: 'center',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              }}
-            >
-              <h3 style={{ fontSize: '1rem', color: '#374151' }}>{item.label}</h3>
+            <div key={i} className={`${styles.statTile} ${styles.statTileCenter}`}>
+              <h3 className={`${styles.statTileLabel} ${styles.statTileLabelPlain}`}>
+                {item.label}
+              </h3>
               <p
-                style={{
-                  fontSize: '1.5rem',
-                  fontWeight: 700,
-                  color: item.color,
-                }}
+                className={`${styles.statTileValue} ${styles.statTileValuePush}`}
+                style={{ color: item.color }}
               >
                 {item.count}
               </p>
@@ -221,37 +197,34 @@ const HousekeepingDashboard = ({ onLogout }) => {
           ))}
         </div>
 
-        {/* --------------------------------------------------- */}
-        {/* 2. ROOM MANAGEMENT */}
-        {/* --------------------------------------------------- */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', gap: '1rem', flexWrap: 'wrap' }}>
+        <div className={styles.flexBetween}>
           <h2 className={styles.sectionTitle}>
-            {activeView === 'cleaning' ? 'Danh sách phòng cần dọn' : 'Tất cả phòng'}
+            {activeView === 'cleaning' ? 'Rooms to clean' : 'All rooms'}
           </h2>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <div className={styles.toolbarRow}>
             <button
               className={`${buttonStyles.base} ${buttonStyles.secondary} ${buttonStyles.sm} ${activeView === 'cleaning' ? buttonStyles.primary : ''}`}
               onClick={() => setActiveView('cleaning')}
             >
-              Phòng cần dọn ({cleaningRooms.length})
+              To clean ({cleaningRooms.length})
             </button>
             <button
               className={`${buttonStyles.base} ${buttonStyles.secondary} ${buttonStyles.sm} ${activeView === 'all' ? buttonStyles.primary : ''}`}
               onClick={() => setActiveView('all')}
             >
-              Tất cả phòng ({allRooms.length})
+              All rooms ({allRooms.length})
             </button>
             <button
               className={`${buttonStyles.base} ${buttonStyles.secondary} ${buttonStyles.sm}`}
               onClick={fetchData}
-              title="Làm mới dữ liệu"
+              title="Refresh data"
             >
               🔄
             </button>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+        <div className={styles.toolbarRowStart}>
           {quickFilters.map((filter) => (
             <button
               key={filter.key}
@@ -264,11 +237,11 @@ const HousekeepingDashboard = ({ onLogout }) => {
         </div>
 
         {loading ? (
-          <p>Đang tải dữ liệu...</p>
+          <p>Loading...</p>
         ) : roomsToShow.length === 0 ? (
-          <p>Hiện không có phòng nào.</p>
+          <p>No rooms to show.</p>
         ) : filteredRoomsToShow.length === 0 ? (
-          <p>Không có phòng nào khớp với bộ lọc trạng thái đã chọn.</p>
+          <p>No rooms match the selected status filter.</p>
         ) : (
           <div className={`${styles.grid} ${styles.gridRooms}`}>
             {filteredRoomsToShow.map((room) => {
@@ -278,29 +251,12 @@ const HousekeepingDashboard = ({ onLogout }) => {
               const roomNumber = room.number || room.roomNumber || room.roomId || room._id;
 
               return (
-                <div
-                  key={room._id || room.roomId || room.id}
-                  style={{
-                    background: 'white',
-                    borderRadius: '0.5rem',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                    padding: '1.5rem',
-                  }}
-                >
-                  {/* Header */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      marginBottom: '1rem',
-                    }}
-                  >
+                <div key={room._id || room.roomId || room.id} className={styles.dashboardPanel}>
+                  <div className={styles.dashboardPanelHeader}>
                     <div>
-                      <h3 style={{ fontSize: '1.125rem', fontWeight: 700 }}>
-                        Phòng {roomNumber}
-                      </h3>
-                      <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-                        Tầng {room.floor || room.floorNumber || '-'}
+                      <h3 className={styles.roomCardTitle}>Room {roomNumber}</h3>
+                      <p className={styles.panelMuted}>
+                        Floor {room.floor || room.floorNumber || '-'}
                       </p>
                     </div>
 
@@ -316,14 +272,13 @@ const HousekeepingDashboard = ({ onLogout }) => {
                     </span>
                   </div>
 
-                  {/* Action buttons */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div className={styles.vStackSm}>
                     {statusKey === 'dirty' && (
                       <button
                         className={`${buttonStyles.base} ${buttonStyles.primary} ${buttonStyles.md}`}
                         onClick={() => handleStartCleaning(room)}
                       >
-                        <Brush size={16} /> Bắt đầu dọn phòng
+                        <Brush size={16} /> Start cleaning
                       </button>
                     )}
 
@@ -332,16 +287,15 @@ const HousekeepingDashboard = ({ onLogout }) => {
                         className={`${buttonStyles.base} ${buttonStyles.primary} ${buttonStyles.md}`}
                         onClick={() => handleFinishCleaning(room)}
                       >
-                        <CheckCircle size={16} /> Hoàn tất dọn phòng
+                        <CheckCircle size={16} /> Finish cleaning
                       </button>
                     )}
 
-                    {/* Nút cập nhật trạng thái cho tất cả phòng */}
                     <button
                       className={`${buttonStyles.base} ${buttonStyles.secondary} ${buttonStyles.md}`}
                       onClick={() => handleOpenStatusModal(room)}
                     >
-                      <CheckCircle size={16} /> Cập nhật trạng thái
+                      <CheckCircle size={16} /> Update status
                     </button>
 
                     <button
@@ -351,14 +305,14 @@ const HousekeepingDashboard = ({ onLogout }) => {
                         setShowReportModal(true);
                       }}
                     >
-                      <Wrench size={16} /> Báo lỗi bảo trì
+                      <Wrench size={16} /> Report maintenance
                     </button>
 
                     <button
                       className={`${buttonStyles.base} ${buttonStyles.secondary} ${buttonStyles.md}`}
                       onClick={() => setSelectedRoom(room)}
                     >
-                      <Eye size={16} /> Xem chi tiết phòng
+                      <Eye size={16} /> Room details
                     </button>
                   </div>
                 </div>
@@ -368,27 +322,18 @@ const HousekeepingDashboard = ({ onLogout }) => {
         )}
       </div>
 
-      {/* --------------------------------------------------- */}
-      {/* 3. REPORT MAINTENANCE MODAL */}
-      {/* --------------------------------------------------- */}
       {showReportModal && selectedRoom && (
         <div className={styles.modalOverlay} onClick={() => setShowReportModal(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h2>Báo cáo sự cố – Phòng {selectedRoom.roomNumber || selectedRoom.number}</h2>
+            <h2 className={styles.modalFormTitle}>Report issue — Room {selectedRoom.roomNumber || selectedRoom.number}</h2>
             <textarea
-              placeholder="Mô tả vấn đề..."
+              className={`${styles.textareaDark} ${styles.mtMd}`}
+              placeholder="Describe the problem..."
               value={reportText}
               onChange={(e) => setReportText(e.target.value)}
-              style={{
-                width: '100%',
-                minHeight: '80px',
-                marginTop: '10px',
-                padding: '10px',
-                borderRadius: '6px',
-                border: '1px solid #d1d5db',
-              }}
+              rows={4}
             />
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', justifyContent: 'flex-end' }}>
+            <div className={styles.modalFooterBar}>
               <button
                 className={`${buttonStyles.base} ${buttonStyles.secondary} ${buttonStyles.md}`}
                 onClick={() => {
@@ -397,51 +342,46 @@ const HousekeepingDashboard = ({ onLogout }) => {
                   setSelectedRoom(null);
                 }}
               >
-                Hủy
+                Cancel
               </button>
               <button
                 className={`${buttonStyles.base} ${buttonStyles.primary} ${buttonStyles.md}`}
                 onClick={handleSubmitReport}
               >
-                Gửi báo cáo
+                Submit report
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* --------------------------------------------------- */}
-      {/* 4. STATUS UPDATE MODAL */}
-      {/* --------------------------------------------------- */}
       {showStatusModal && selectedRoom && (
         <div className={styles.modalOverlay} onClick={() => setShowStatusModal(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h2>Cập nhật trạng thái - Phòng {selectedRoom.roomNumber || selectedRoom.number}</h2>
-            <div style={{ marginTop: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-                Trạng thái hiện tại: <strong>{getStatusLabel(selectedRoom.status)}</strong>
-              </label>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-                Chọn trạng thái mới <span style={{ color: '#ef4444' }}>*</span>
-              </label>
-              <select
-                value={newStatus}
-                onChange={(e) => setNewStatus(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem 0.75rem',
-                  borderRadius: '0.375rem',
-                  border: '1px solid #d1d5db',
-                  fontSize: '0.875rem'
-                }}
-              >
-                <option value="available">Sẵn sàng</option>
-                <option value="dirty">Cần dọn</option>
-                <option value="cleaning">Đang dọn</option>
-                <option value="maintenance">Bảo trì</option>
-              </select>
+            <h2 className={styles.modalFormTitle}>Update status — Room {selectedRoom.roomNumber || selectedRoom.number}</h2>
+            <div className={`${styles.modalFormStack} ${styles.mtMd}`}>
+              <div>
+                <span className={styles.formLabel}>Current status: </span>
+                <strong>{getStatusLabel(selectedRoom.status)}</strong>
+              </div>
+              <div>
+                <label className={styles.formLabel} htmlFor="hk-new-status">
+                  New status <span className={styles.reqStar}>*</span>
+                </label>
+                <select
+                  id="hk-new-status"
+                  className={styles.formInputDark}
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value)}
+                >
+                  <option value="available">Ready</option>
+                  <option value="dirty">Needs cleaning</option>
+                  <option value="cleaning">Cleaning</option>
+                  <option value="maintenance">Maintenance</option>
+                </select>
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+            <div className={styles.modalFooterBar}>
               <button
                 className={`${buttonStyles.base} ${buttonStyles.secondary} ${buttonStyles.md}`}
                 onClick={() => {
@@ -450,49 +390,46 @@ const HousekeepingDashboard = ({ onLogout }) => {
                   setNewStatus('');
                 }}
               >
-                Hủy
+                Cancel
               </button>
               <button
                 className={`${buttonStyles.base} ${buttonStyles.primary} ${buttonStyles.md}`}
                 onClick={handleConfirmStatusUpdate}
               >
-                Cập nhật
+                Update
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* --------------------------------------------------- */}
-      {/* 5. ROOM DETAIL MODAL */}
-      {/* --------------------------------------------------- */}
       {selectedRoom && !showReportModal && !showStatusModal && (
         <div className={styles.modalOverlay} onClick={() => setSelectedRoom(null)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h2>Chi tiết phòng {selectedRoom.roomNumber || selectedRoom.number}</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+            <h2 className={styles.modalFormTitle}>Room {selectedRoom.roomNumber || selectedRoom.number}</h2>
+            <div className={`${styles.vStackMd} ${styles.mtMd}`}>
               <p>
-                <b>Tầng:</b> {selectedRoom.floor || selectedRoom.floorNumber || '-'}
+                <b>Floor:</b> {selectedRoom.floor || selectedRoom.floorNumber || '-'}
               </p>
               <p>
-                <b>Loại phòng:</b> {selectedRoom.roomType?.typeName || selectedRoom.type || 'Không rõ'}
+                <b>Room type:</b> {selectedRoom.roomType?.typeName || selectedRoom.type || 'Unknown'}
               </p>
               <p>
-                <b>Trạng thái:</b> 
-                <span className={`${badgeStyles.badge}`} style={{ marginLeft: '0.5rem' }}>
+                <b>Status:</b>
+                <span className={`${badgeStyles.badge} ${styles.badgeSpacer}`}>
                   {getStatusLabel(selectedRoom.status || selectedRoom.roomStatus)}
                 </span>
               </p>
               <p>
-                <b>Giá cơ bản:</b> ₫{Number(selectedRoom.roomType?.basePrice || 0).toLocaleString()}/đêm
+                <b>Base rate:</b> ₫{Number(selectedRoom.roomType?.basePrice || 0).toLocaleString('en-US')}/night
               </p>
             </div>
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+            <div className={styles.modalFooterBar}>
               <button
                 className={`${buttonStyles.base} ${buttonStyles.secondary} ${buttonStyles.md}`}
                 onClick={() => setSelectedRoom(null)}
               >
-                Đóng
+                Close
               </button>
               <button
                 className={`${buttonStyles.base} ${buttonStyles.primary} ${buttonStyles.md}`}
@@ -500,7 +437,7 @@ const HousekeepingDashboard = ({ onLogout }) => {
                   setShowStatusModal(true);
                 }}
               >
-                Cập nhật trạng thái
+                Update status
               </button>
             </div>
           </div>

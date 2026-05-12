@@ -2,40 +2,40 @@ const { body } = require('express-validator');
 
 const createRoomRules = [
   body('roomNumber')
-    .notEmpty().withMessage('Số phòng là bắt buộc')
-    .isString().withMessage('Số phòng không hợp lệ')
+    .notEmpty().withMessage('Room number is required')
+    .isString().withMessage('Invalid room number')
     .trim(),
-  
+
   body('roomTypeId')
-    .notEmpty().withMessage('ID loại phòng là bắt buộc')
-    .isMongoId().withMessage('ID loại phòng không đúng format'),
+    .notEmpty().withMessage('Room type ID is required')
+    .isMongoId().withMessage('Invalid room type ID format'),
 
   body('floor')
-    .notEmpty().withMessage('Tầng là bắt buộc')
-    .isString().withMessage('Tầng không đúng format'),
+    .notEmpty().withMessage('Floor is required')
+    .isString().withMessage('Invalid floor format'),
 
   body('status')
     .optional()
-    .isIn(['available', 'occupied', 'dirty', 'cleaning', 'maintenance']).withMessage('Trạng thái không hợp lệ')
+    .isIn(['available', 'occupied', 'dirty', 'cleaning', 'maintenance']).withMessage('Invalid status')
 ];
 
 const updateRoomRules = [
   body('roomNumber')
     .optional()
-    .isString().withMessage('Số phòng không hợp lệ')
+    .isString().withMessage('Invalid room number')
     .trim(),
   body('roomTypeId')
     .optional()
-    .isMongoId().withMessage('ID loại phòng không đúng format'),
+    .isMongoId().withMessage('Invalid room type ID format'),
   body('floor')
     .optional()
-    .isString().withMessage('Tầng không đúng format'),
+    .isString().withMessage('Invalid floor format'),
 ];
 
 const updateRoomStatusRules = [
   body('status')
-    .notEmpty().withMessage('Trạng thái là bắt buộc')
-    .isIn(['available', 'occupied', 'dirty', 'cleaning', 'maintenance']).withMessage('Trạng thái không hợp lệ')
+    .notEmpty().withMessage('Status is required')
+    .isIn(['available', 'occupied', 'dirty', 'cleaning', 'maintenance']).withMessage('Invalid status')
 ];
 
 module.exports = { createRoomRules, updateRoomRules, updateRoomStatusRules };

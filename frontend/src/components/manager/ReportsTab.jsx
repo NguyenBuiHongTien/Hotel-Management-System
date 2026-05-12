@@ -1,10 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { FileText, Eye } from 'lucide-react';
 import { reportService } from '../../services/reportService';
+import { asArray } from '../../utils/apiNormalize';
 import styles from '../../styles/Dashboard.module.css';
 import tableStyles from '../../styles/Table.module.css';
 import badgeStyles from '../../styles/Badge.module.css';
 import buttonStyles from '../../styles/Button.module.css';
+
+const normalizeReportList = (data) => asArray(data, 'reports');
+
+const reportTypeLabel = (type) => {
+  if (type === 'occupancy') return 'Occupancy';
+  if (type === 'revenue') return 'Revenue';
+  if (type === 'maintenance') return 'Maintenance';
+  if (type === 'guest') return 'Guest';
+  return type || '—';
+};
 
 const ReportsTab = () => {
   const [reports, setReports] = useState([]);
@@ -27,10 +39,10 @@ const ReportsTab = () => {
     try {
       setLoading(true);
       const data = await reportService.listReports();
-      setReports(Array.isArray(data) ? data : (data.data || []));
+      setReports(normalizeReportList(data));
     } catch (err) {
       console.error('Error loading reports:', err);
-      alert('Không thể tải danh sách báo cáo');
+      alert('Could not load reports');
     } finally {
       setLoading(false);
     }
@@ -38,7 +50,11 @@ const ReportsTab = () => {
 
   const handleGenerateReport = async () => {
     if (!dateRange.fromDate || !dateRange.toDate) {
-      alert('Vui lòng chọn khoảng thời gian');
+      alert('Please select a date range');
+      return;
+    }
+    if (dateRange.toDate < dateRange.fromDate) {
+      alert('End date must be on or after the start date.');
       return;
     }
 
@@ -55,12 +71,12 @@ const ReportsTab = () => {
           toDate: dateRange.toDate
         });
       }
-      alert('Tạo báo cáo thành công!');
+      alert('Report created successfully!');
       setShowGenerateModal(false);
       setDateRange({ fromDate: '', toDate: '' });
-      loadReports();
+      await loadReports();
     } catch (err) {
-      alert('Lỗi: ' + (err.message || 'Không thể tạo báo cáo'));
+      alert('Error: ' + (err.message || 'Could not create report'));
     } finally {
       setGenerating(false);
     }
@@ -72,39 +88,64 @@ const ReportsTab = () => {
       setSelectedReport(data);
       setShowDetailModal(true);
     } catch (err) {
-      alert('Không thể tải chi tiết báo cáo');
+      alert('Could not load report details');
     }
   };
 
+  const detailSummary = useMemo(() => {
+    if (!showDetailModal || !selectedReport?.data) return null;
+    const d = selectedReport.data;
+    if (selectedReport.reportType === 'occupancy') {
+      return (
+        <ul className={styles.listMuted}>
+          <li>Total rooms: <strong>{d.totalRooms ?? '—'}</strong></li>
+          <li>Rooms with overlapping bookings in range: <strong>{d.distinctRoomsWithOverlap ?? '—'}</strong></li>
+          <li>Estimated occupancy rate: <strong>{d.occupancyRate != null ? `${d.occupancyRate}%` : '—'}</strong></li>
+          <li>Overlapping bookings in range: <strong>{d.bookingsOverlapping ?? '—'}</strong></li>
+        </ul>
+      );
+    }
+    if (selectedReport.reportType === 'revenue') {
+      const total = d.totalRevenue;
+      return (
+        <ul className={styles.listMuted}>
+          <li>Total revenue (paid invoices in period): <strong>{total != null ? `₫${Number(total).toLocaleString('en-US')}` : '—'}</strong></li>
+          <li>Daily rows: <strong>{Array.isArray(d.dailyBreakdown) ? d.dailyBreakdown.length : 0}</strong></li>
+        </ul>
+      );
+    }
+    return null;
+  }, [showDetailModal, selectedReport]);
+
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h2 className={styles.sectionTitle}>Báo cáo</h2>
+      <div className={styles.flexBetween}>
+        <h2 className={styles.sectionTitle}>Reports</h2>
         <button
           className={`${buttonStyles.primary} ${buttonStyles.md}`}
           onClick={() => setShowGenerateModal(true)}
         >
-          <FileText size={18} style={{ marginRight: '0.5rem' }} />
-          Tạo báo cáo mới
+          <FileText size={18} aria-hidden />
+          New report
         </button>
       </div>
 
       {/* Stats */}
-      <div className={`${styles.grid} ${styles.grid3}`} style={{ marginBottom: '1.5rem' }}>
-        <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Tổng báo cáo</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1f2937' }}>{reports.length}</div>
+      <div className={`${styles.grid} ${styles.grid3} ${styles.mbLg}`}>
+        <div className={styles.statTile}>
+          <div className={styles.statTileLabel}>Total reports</div>
+          <div className={styles.statTileValue}>{reports.length}</div>
         </div>
-        <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Báo cáo tỷ lệ lấp đầy</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#3b82f6' }}>
-            {reports.filter(r => r.reportType === 'occupancy').length}
+        <div className={styles.statTile}>
+          <div className={styles.statTileLabel}>Occupancy reports</div>
+          <div className={styles.statTileValueAccent}>
+            {reports.filter((r) => r.reportType === 'occupancy').length}
           </div>
         </div>
-        <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Báo cáo doanh thu</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#22c55e' }}>
-            {reports.filter(r => r.reportType === 'revenue').length}
+        <div className={styles.statTile}>
+          <div className={styles.statTileLabel}>Revenue reports</div>
+          <div className={styles.statTileValueGreen}>
+            {reports.filter((r) => r.reportType === 'revenue').length}
           </div>
         </div>
       </div>
@@ -114,20 +155,20 @@ const ReportsTab = () => {
         <table className={tableStyles.table}>
           <thead>
             <tr>
-              <th className={tableStyles.th}>Mã báo cáo</th>
-              <th className={tableStyles.th}>Tên báo cáo</th>
-              <th className={tableStyles.th}>Loại</th>
-              <th className={tableStyles.th}>Từ ngày</th>
-              <th className={tableStyles.th}>Đến ngày</th>
-              <th className={tableStyles.th}>Ngày tạo</th>
-              <th className={tableStyles.th}>Thao tác</th>
+              <th className={tableStyles.th}>Report ID</th>
+              <th className={tableStyles.th}>Report name</th>
+              <th className={tableStyles.th}>Type</th>
+              <th className={tableStyles.th}>From</th>
+              <th className={tableStyles.th}>To</th>
+              <th className={tableStyles.th}>Created</th>
+              <th className={tableStyles.th}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td className={tableStyles.td} colSpan={7}>Đang tải...</td></tr>
+              <tr><td className={tableStyles.td} colSpan={7}>Loading...</td></tr>
             ) : reports.length === 0 ? (
-              <tr><td className={tableStyles.td} colSpan={7}>Không có báo cáo nào</td></tr>
+              <tr><td className={tableStyles.td} colSpan={7}>No reports yet</td></tr>
             ) : (
               reports.map(report => (
                 <tr key={report._id}>
@@ -137,24 +178,23 @@ const ReportsTab = () => {
                     <span className={`${badgeStyles.badge} ${
                       report.reportType === 'revenue' ? badgeStyles.success : badgeStyles.info
                     }`}>
-                      {report.reportType === 'occupancy' ? 'Tỷ lệ lấp đầy' : 
-                       report.reportType === 'revenue' ? 'Doanh thu' : report.reportType}
+                      {reportTypeLabel(report.reportType)}
                     </span>
                   </td>
                   <td className={tableStyles.td}>
-                    {report.startDate ? new Date(report.startDate).toLocaleDateString('vi-VN') : '—'}
+                    {report.startDate ? new Date(report.startDate).toLocaleDateString('en-US') : '—'}
                   </td>
                   <td className={tableStyles.td}>
-                    {report.endDate ? new Date(report.endDate).toLocaleDateString('vi-VN') : '—'}
+                    {report.endDate ? new Date(report.endDate).toLocaleDateString('en-US') : '—'}
                   </td>
                   <td className={tableStyles.td}>
-                    {report.generatedDate ? new Date(report.generatedDate).toLocaleDateString('vi-VN') : '—'}
+                    {report.generatedDate ? new Date(report.generatedDate).toLocaleDateString('en-US') : '—'}
                   </td>
                   <td className={tableStyles.td}>
                     <button
                       className={tableStyles.actionBtn}
                       onClick={() => handleViewDetail(report._id)}
-                      title="Xem chi tiết"
+                      title="View details"
                     >
                       <Eye size={16} />
                     </button>
@@ -166,70 +206,66 @@ const ReportsTab = () => {
         </table>
       </div>
 
-      {/* Generate Modal */}
-      {showGenerateModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowGenerateModal(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-            <h2>Tạo báo cáo mới</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+      {/* Generate modal — portaled so date picker and overlay avoid layout issues */}
+      {showGenerateModal && createPortal(
+        <div className={styles.modalOverlay} onClick={() => setShowGenerateModal(false)} role="presentation">
+          <div className={`${styles.modal} ${styles.modalMax500}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="report-generate-title">
+            <h2 id="report-generate-title" className={styles.modalFormTitle}>New report</h2>
+            <div className={styles.modalFormStack}>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-                  Loại báo cáo <span style={{ color: '#ef4444' }}>*</span>
+                <label className={styles.formLabel} htmlFor="report-type">
+                  Report type <span className={styles.reqStar}>*</span>
                 </label>
                 <select
+                  id="report-type"
+                  className={styles.formInputDark}
                   value={reportType}
                   onChange={(e) => setReportType(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem 0.75rem',
-                    borderRadius: '0.375rem',
-                    border: '1px solid #d1d5db',
-                    fontSize: '0.875rem'
-                  }}
                 >
-                  <option value="occupancy">Báo cáo tỷ lệ lấp đầy</option>
-                  <option value="revenue">Báo cáo doanh thu</option>
+                  <option value="occupancy">Occupancy report</option>
+                  <option value="revenue">Revenue report</option>
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-                  Từ ngày <span style={{ color: '#ef4444' }}>*</span>
+                <label className={styles.formLabel} htmlFor="report-from">
+                  From <span className={styles.reqStar}>*</span>
                 </label>
                 <input
+                  id="report-from"
                   type="date"
+                  className={styles.formInputDark}
                   required
                   value={dateRange.fromDate}
-                  onChange={(e) => setDateRange({ ...dateRange, fromDate: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem 0.75rem',
-                    borderRadius: '0.375rem',
-                    border: '1px solid #d1d5db',
-                    fontSize: '0.875rem'
+                  max={dateRange.toDate || undefined}
+                  onChange={(e) => {
+                    const fromDate = e.target.value;
+                    setDateRange((prev) => ({
+                      fromDate,
+                      toDate: prev.toDate && prev.toDate < fromDate ? fromDate : prev.toDate,
+                    }));
                   }}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-                  Đến ngày <span style={{ color: '#ef4444' }}>*</span>
+                <label className={styles.formLabel} htmlFor="report-to">
+                  To <span className={styles.reqStar}>*</span>
                 </label>
                 <input
+                  id="report-to"
                   type="date"
+                  className={styles.formInputDark}
                   required
+                  min={dateRange.fromDate || undefined}
                   value={dateRange.toDate}
-                  onChange={(e) => setDateRange({ ...dateRange, toDate: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem 0.75rem',
-                    borderRadius: '0.375rem',
-                    border: '1px solid #d1d5db',
-                    fontSize: '0.875rem'
-                  }}
+                  onChange={(e) =>
+                    setDateRange((prev) => ({ ...prev, toDate: e.target.value }))
+                  }
                 />
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+            <div className={styles.modalFooterBar}>
               <button
+                type="button"
                 className={`${buttonStyles.secondary} ${buttonStyles.md}`}
                 onClick={() => {
                   setShowGenerateModal(false);
@@ -237,63 +273,76 @@ const ReportsTab = () => {
                 }}
                 disabled={generating}
               >
-                Hủy
+                Cancel
               </button>
               <button
+                type="button"
                 className={`${buttonStyles.primary} ${buttonStyles.md}`}
                 onClick={handleGenerateReport}
                 disabled={generating}
               >
-                {generating ? 'Đang tạo...' : 'Tạo báo cáo'}
+                {generating ? 'Creating...' : 'Create report'}
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Detail Modal */}
-      {showDetailModal && selectedReport && (
-        <div className={styles.modalOverlay} onClick={() => setShowDetailModal(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h2>Chi tiết báo cáo: {selectedReport.reportName}</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+      {showDetailModal && selectedReport && createPortal(
+        <div className={styles.modalOverlay} onClick={() => setShowDetailModal(false)} role="presentation">
+          <div className={`${styles.modal} ${styles.modalMax700} ${styles.modalScrollable}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <h2 className={styles.modalFormTitle}>Report: {selectedReport.reportName}</h2>
+            <div className={styles.modalFormStack}>
               <div>
-                <strong>Loại báo cáo:</strong> {selectedReport.reportType}
+                <strong>Report type:</strong> {reportTypeLabel(selectedReport.reportType)}
               </div>
               <div>
-                <strong>Khoảng thời gian:</strong> {selectedReport.startDate ? new Date(selectedReport.startDate).toLocaleDateString('vi-VN') : '—'} - {selectedReport.endDate ? new Date(selectedReport.endDate).toLocaleDateString('vi-VN') : '—'}
+                <strong>Period:</strong>{' '}
+                {selectedReport.startDate ? new Date(selectedReport.startDate).toLocaleDateString('en-US') : '—'} —{' '}
+                {selectedReport.endDate ? new Date(selectedReport.endDate).toLocaleDateString('en-US') : '—'}
               </div>
               <div>
-                <strong>Ngày tạo:</strong> {selectedReport.generatedDate ? new Date(selectedReport.generatedDate).toLocaleDateString('vi-VN') : '—'}
+                <strong>Created:</strong>{' '}
+                {selectedReport.generatedDate ? new Date(selectedReport.generatedDate).toLocaleDateString('en-US') : '—'}
               </div>
+              {selectedReport.generatedBy && (
+                <div>
+                  <strong>Created by:</strong>{' '}
+                  {typeof selectedReport.generatedBy === 'object'
+                    ? selectedReport.generatedBy.name || selectedReport.generatedBy.email || '—'
+                    : '—'}
+                </div>
+              )}
+              {detailSummary && (
+                <div>
+                  <strong>Summary</strong>
+                  {detailSummary}
+                </div>
+              )}
               <div>
-                <strong>Dữ liệu:</strong>
-                <pre style={{
-                  background: '#f3f4f6',
-                  padding: '1rem',
-                  borderRadius: '0.5rem',
-                  marginTop: '0.5rem',
-                  overflow: 'auto',
-                  fontSize: '0.875rem'
-                }}>
-                  {JSON.stringify(selectedReport.data, null, 2)}
+                <strong>Full data (JSON)</strong>
+                <pre className={`${styles.preCode} ${styles.mtMd}`}>
+                  {JSON.stringify(selectedReport.data ?? {}, null, 2)}
                 </pre>
               </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+            <div className={styles.modalFooterBar}>
               <button
+                type="button"
                 className={`${buttonStyles.secondary} ${buttonStyles.md}`}
                 onClick={() => setShowDetailModal(false)}
               >
-                Đóng
+                Close
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
 };
 
 export default ReportsTab;
-

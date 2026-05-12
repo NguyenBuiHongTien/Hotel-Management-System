@@ -1,5 +1,5 @@
 services:
-  # ---------- MongoDB (dùng chung cho dev/prod) ----------
+  # ---------- MongoDB (shared dev/prod) ----------
   mongodb:
     image: mongo:7
     container_name: hotel_mongodb
@@ -31,12 +31,12 @@ services:
     environment:
       NODE_ENV: production
       PORT: 5000
-      # Kết nối MongoDB qua tên service
+      # MongoDB connection via service name
       MONGODB_URL: mongodb://mongodb:27017/hotel_management
-      # CORS: cho phép frontend (trình duyệt gọi API)
+      # CORS: allowed browser origins for the API
       FRONTEND_URL: http://localhost:3000
       JWT_SECRET: ${JWT_SECRET}
-      # Gmail API (tùy chọn — thêm vào file .env ở root project)
+      # Gmail API (optional — set in root `.env`)
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GMAIL_REFRESH_TOKEN: ${GMAIL_REFRESH_TOKEN:-}
@@ -52,7 +52,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # URL API khi user mở từ trình duyệt (localhost:5000)
+        # Public API URL used by the browser (localhost:5000)
         VITE_API_URL: http://localhost:5000/api
     container_name: hotel_frontend
     restart: unless-stopped

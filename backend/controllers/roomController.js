@@ -5,7 +5,7 @@ const Booking = require('../models/bookingModel');
 const { buildBookingOverlapFilter } = require('../utils/bookingOverlap');
 
 /**
- * @desc    Lấy danh sách phòng (kèm filter)
+ * @desc    List rooms (with filters)
  * @route   GET /api/rooms
  * @access  Public (All Staff)
  */
@@ -24,7 +24,7 @@ const getAllRooms = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Lấy chi tiết phòng
+ * @desc    Get room by ID
  * @route   GET /api/rooms/:roomId
  * @access  Public (All Staff)
  */
@@ -33,13 +33,13 @@ const getRoomById = asyncHandler(async (req, res) => {
     .populate('roomType');
   if (!room) {
     res.status(404);
-    throw new Error('Không tìm thấy phòng');
+    throw new Error('Room not found');
   }
   res.json(room);
 });
 
 /**
- * @desc    Tạo phòng mới
+ * @desc    Create room
  * @route   POST /api/rooms
  * @access  Private/Manager
  */
@@ -48,11 +48,11 @@ const createRoom = asyncHandler(async (req, res) => {
 
   if (await Room.findOne({ roomNumber })) {
     res.status(400);
-    throw new Error('Số phòng đã tồn tại');
+    throw new Error('Room number already exists');
   }
   if (!(await RoomType.findById(roomTypeId))) {
     res.status(400);
-    throw new Error('RoomType ID không hợp lệ');
+    throw new Error('Invalid room type ID');
   }
 
   const room = await Room.create({
@@ -66,7 +66,7 @@ const createRoom = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Cập nhật thông tin phòng (Quản lý)
+ * @desc    Update room details (manager)
  * @route   PUT /api/rooms/:roomId
  * @access  Private/Manager
  */
@@ -75,22 +75,20 @@ const updateRoomInfo = asyncHandler(async (req, res) => {
   const room = await Room.findById(req.params.roomId);
   if (!room) {
     res.status(404);
-    throw new Error('Không tìm thấy phòng');
+    throw new Error('Room not found');
   }
 
-  // Check roomNumber conflict if changed
   if (roomNumber && roomNumber !== room.roomNumber) {
     if (await Room.findOne({ roomNumber })) {
       res.status(400);
-      throw new Error('Số phòng đã tồn tại');
+      throw new Error('Room number already exists');
     }
     room.roomNumber = roomNumber;
   }
-  // Check RoomType if changed
   if (roomTypeId) {
     if (!(await RoomType.findById(roomTypeId))) {
       res.status(400);
-      throw new Error('RoomType ID không hợp lệ');
+      throw new Error('Invalid room type ID');
     }
     room.roomType = roomTypeId;
   }
@@ -102,43 +100,41 @@ const updateRoomInfo = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Cập nhật TRẠNG THÁI phòng (Nhân viên)
+ * @desc    Update room status (staff)
  * @route   PUT /api/rooms/:roomId/status
- * @access  Private (Receptionist, Housekeeper, Maintenance) — không Quản lý (đổi trạng thái vận hành)
+ * @access  Private (Receptionist, Housekeeper, Maintenance) — not manager for operational status
  */
 const updateRoomStatus = asyncHandler(async (req, res) => {
   const { status } = req.body;
   const validStatuses = ['available', 'occupied', 'dirty', 'cleaning', 'maintenance'];
   if (!status || !validStatuses.includes(status)) {
     res.status(400);
-    throw new Error('Trạng thái không hợp lệ');
+    throw new Error('Invalid status');
   }
-  
+
   const room = await Room.findById(req.params.roomId).populate('roomType');
 
   if (!room) {
     res.status(404);
-    throw new Error('Không tìm thấy phòng');
+    throw new Error('Room not found');
   }
 
   const role = (req.user?.role || '').toString().trim().toLowerCase();
   const allowedForOps = ['dirty', 'cleaning', 'maintenance'];
 
-  // occupied chỉ được set qua luồng check-in để đồng bộ với booking.
   if (status === 'occupied') {
     res.status(403);
-    throw new Error('Trạng thái occupied chỉ được cập nhật qua nghiệp vụ check-in');
+    throw new Error('Occupied status can only be set via the check-in flow');
   }
 
-  // available chỉ nên được housekeeping xác nhận sau khi hoàn tất dọn phòng.
   if (status === 'available' && role !== 'housekeeper') {
     res.status(403);
-    throw new Error('Chỉ bộ phận buồng phòng mới có thể chuyển phòng sang trạng thái available');
+    throw new Error('Only housekeeping can set a room to available');
   }
 
   if (status !== 'available' && !allowedForOps.includes(status)) {
     res.status(403);
-    throw new Error('Chỉ được cập nhật các trạng thái vận hành: dirty, cleaning, maintenance');
+    throw new Error('You may only set operational statuses: dirty, cleaning, maintenance');
   }
 
   room.status = status;
@@ -147,7 +143,7 @@ const updateRoomStatus = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Tìm phòng trống
+ * @desc    Search available rooms
  * @route   GET /api/rooms/available
  * @access  Private (Receptionist)
  */
@@ -156,20 +152,19 @@ const searchAvailableRooms = asyncHandler(async (req, res) => {
 
   if (!checkInDate || !checkOutDate) {
     res.status(400);
-    throw new Error('Ngày check-in và check-out là bắt buộc');
+    throw new Error('Check-in and check-out dates are required');
   }
   const checkIn = new Date(checkInDate);
   const checkOut = new Date(checkOutDate);
   if (Number.isNaN(checkIn.getTime()) || Number.isNaN(checkOut.getTime())) {
     res.status(400);
-    throw new Error('Ngày check-in/check-out không hợp lệ');
+    throw new Error('Invalid check-in or check-out date');
   }
   if (checkOut <= checkIn) {
     res.status(400);
-    throw new Error('Ngày check-out phải sau ngày check-in');
+    throw new Error('Check-out must be after check-in');
   }
 
-  // 1. Booking trùng khoảng ngày (cùng công thức với create/update booking)
   const conflictFilter = buildBookingOverlapFilter({
     checkInDate: checkIn,
     checkOutDate: checkOut,
@@ -178,16 +173,14 @@ const searchAvailableRooms = asyncHandler(async (req, res) => {
   const conflicts = await Booking.find(conflictFilter).select('room');
   const bookedRoomIds = conflicts.map((b) => b.room);
 
-  // 2. Xây dựng bộ lọc cho Room — phòng có thể đặt trước nếu sẵn sàng hoặc đang/ sẽ dọn (không maintenance/occupied)
   const roomFilter = {
     _id: { $nin: bookedRoomIds },
     status: { $in: ['available', 'dirty', 'cleaning'] },
   };
   if (roomTypeId) roomFilter.roomType = roomTypeId;
 
-  // 3. Tìm phòng và populate roomType để lọc capacity
   let availableRooms = await Room.find(roomFilter).populate('roomType');
-  
+
   if (capacity) {
     availableRooms = availableRooms.filter(
       room => room.roomType && room.roomType.capacity >= Number(capacity)
@@ -197,7 +190,7 @@ const searchAvailableRooms = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Lấy danh sách phòng cần dọn
+ * @desc    Rooms needing cleaning
  * @route   GET /api/rooms/cleaning
  * @access  Private (Housekeeping)
  */
@@ -209,7 +202,7 @@ const getCleaningRooms = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Lấy danh sách phòng đang bảo trì
+ * @desc    Rooms under maintenance
  * @route   GET /api/rooms/maintenance
  * @access  Private (Maintenance, Receptionist)
  */

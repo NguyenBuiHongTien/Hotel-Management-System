@@ -6,7 +6,7 @@ const { getCache, setCache, deleteCache } = require('../services/cacheService');
 const ROOM_TYPES_CACHE_KEY = 'roomTypes:all';
 
 /**
- * @desc    Tạo loại phòng mới
+ * @desc    Create room type
  * @route   POST /api/room-types
  * @access  Private/Manager
  */
@@ -16,7 +16,7 @@ const createRoomType = asyncHandler(async (req, res) => {
   const typeExists = await RoomType.findOne({ typeName });
   if(typeExists) {
       res.status(400);
-      throw new Error('Loại phòng này đã tồn tại');
+      throw new Error('A room type with this name already exists');
   }
 
   const type = await RoomType.create({
@@ -31,30 +31,27 @@ const createRoomType = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Lấy tất cả loại phòng
+ * @desc    List all room types
  * @route   GET /api/room-types
  * @access  Private/Manager
  */
 const getAllRoomTypes = asyncHandler(async (req, res) => {
   const cacheKey = ROOM_TYPES_CACHE_KEY;
-  
-  // Kiểm tra cache
+
   const cached = getCache(cacheKey);
   if (cached) {
     return res.json(cached);
   }
-  
-  // Nếu không có cache, query database
+
   const roomTypes = await RoomType.find();
-  
-  // Lưu vào cache
-  setCache(cacheKey, roomTypes, 600); // 10 phút
+
+  setCache(cacheKey, roomTypes, 600);
   
   res.json(roomTypes);
 });
 
 /**
- * @desc    Lấy chi tiết loại phòng
+ * @desc    Get room type by ID
  * @route   GET /api/room-types/:id
  * @access  Private/Manager
  */
@@ -62,13 +59,13 @@ const getRoomTypeById = asyncHandler(async (req, res) => {
   const roomType = await RoomType.findById(req.params.id);
   if (!roomType) {
     res.status(404);
-    throw new Error('Không tìm thấy loại phòng');
+    throw new Error('Room type not found');
   }
   res.json(roomType);
 });
 
 /**
- * @desc    Cập nhật loại phòng
+ * @desc    Update room type
  * @route   PUT /api/room-types/:id
  * @access  Private/Manager
  */
@@ -85,14 +82,14 @@ const updateRoomType = asyncHandler(async (req, res) => {
 
     if (!roomType) {
         res.status(404);
-        throw new Error('Không tìm thấy loại phòng');
+        throw new Error('Room type not found');
     }
     deleteCache(ROOM_TYPES_CACHE_KEY);
     res.json(roomType);
 });
 
 /**
- * @desc    Xóa loại phòng
+ * @desc    Delete room type
  * @route   DELETE /api/room-types/:id
  * @access  Private/Manager
  */
@@ -100,18 +97,18 @@ const deleteRoomType = asyncHandler(async (req, res) => {
   const roomType = await RoomType.findById(req.params.id);
   if (!roomType) {
     res.status(404);
-    throw new Error('Không tìm thấy loại phòng');
+    throw new Error('Room type not found');
   }
   
   const roomExists = await Room.findOne({ roomType: req.params.id });
   if (roomExists) {
     res.status(400);
-    throw new Error('Không thể xóa. Loại phòng đang được sử dụng.');
+    throw new Error('Cannot delete: this room type is in use.');
   }
 
   await RoomType.deleteOne({ _id: roomType._id });
   deleteCache(ROOM_TYPES_CACHE_KEY);
-  res.json({ message: 'Đã xóa loại phòng' });
+  res.json({ message: 'Room type deleted' });
 });
 
 module.exports = { 

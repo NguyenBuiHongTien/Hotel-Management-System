@@ -48,7 +48,15 @@ const apiCall = async (endpoint, options = {}) => {
     }
 
     if (!response.ok) {
-      const errorMsg = data.message || data.error || `HTTP error! status: ${response.status}`;
+      let errorMsg = data.message || data.error || `HTTP error! status: ${response.status}`;
+      if (Array.isArray(data.errors) && data.errors.length > 0) {
+        const parts = data.errors
+          .map((e) => (typeof e === 'string' ? e : e.msg || e.message))
+          .filter(Boolean);
+        if (parts.length) {
+          errorMsg = `${errorMsg} — ${parts.join('; ')}`;
+        }
+      }
       if (IS_DEV) {
         console.error(`[API_CALL] Error ${response.status}:`, errorMsg);
       }
@@ -66,7 +74,7 @@ const apiCall = async (endpoint, options = {}) => {
         error.message.includes('NetworkError') ||
         error.message.includes('ERR_CONNECTION_REFUSED') ||
         error.message.includes('ERR_INTERNET_DISCONNECTED')) {
-      throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra xem backend đã được khởi động chưa (port 5000).');
+      throw new Error('Cannot reach the server. Make sure the backend is running (port 5000).');
     }
     
     // If it's already an Error object, re-throw it

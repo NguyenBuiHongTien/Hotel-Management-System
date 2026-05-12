@@ -1,25 +1,25 @@
 const mongoose = require('mongoose');
-const Room = require('./roomModel'); // Import Room model để cập nhật trạng thái
+const Room = require('./roomModel');
 
 const maintenanceSchema = new mongoose.Schema({
   room: {
     type: mongoose.Schema.ObjectId,
     ref: 'Room',
-    required: [true, 'Một yêu cầu bảo trì phải gắn với một phòng cụ thể.'],
+    required: [true, 'A maintenance request must be linked to a specific room.'],
   },
   reportedBy: {
     type: mongoose.Schema.ObjectId,
-    ref: 'User', // Nhân viên (Housekeeping, Receptionist) báo cáo
-    required: [true, 'Phải có người báo cáo sự cố.'],
+    ref: 'User',
+    required: [true, 'Reporter is required.'],
   },
   assignedTo: {
     type: mongoose.Schema.ObjectId,
-    ref: 'User', // Nhân viên bảo trì được gán
+    ref: 'User',
   },
   issueDescription: {
     type: String,
     trim: true,
-    required: [true, 'Vui lòng mô tả sự cố.'],
+    required: [true, 'Please describe the issue.'],
   },
   status: {
     type: String,
@@ -43,7 +43,7 @@ const maintenanceSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Populate thông tin phòng và người báo cáo
+// Populate room and reporter
 maintenanceSchema.pre(/^find/, function(next) {
   this.populate({
     path: 'room',
@@ -55,11 +55,10 @@ maintenanceSchema.pre(/^find/, function(next) {
   next();
 });
 
-// Middleware: Khi một yêu cầu được tạo, cập nhật trạng thái phòng thành "maintenance"
+// On create, set room status to maintenance
 maintenanceSchema.pre('save', async function (next) {
   if (!this.isNew) return next();
-  
-  // Cập nhật trạng thái phòng
+
   await Room.findByIdAndUpdate(this.room, { status: 'maintenance' });
   next();
 });

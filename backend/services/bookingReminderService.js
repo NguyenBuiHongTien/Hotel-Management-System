@@ -111,7 +111,7 @@ const runBookingReminderOnce = async () => {
       );
     }
   } catch (err) {
-    console.error('[email-reminder] Lỗi chạy reminder:', err.message);
+    console.error('[email-reminder] Reminder run error:', err.message);
   } finally {
     isRunning = false;
   }
@@ -121,7 +121,7 @@ const startBookingReminderScheduler = () => {
   const settings = getSettings();
   if (!settings.enabled || reminderTimer) return;
 
-  // Chạy 1 lần lúc khởi động để không bỏ lỡ reminder sát thời điểm deploy/restart
+  // Run once on startup so reminders near deploy/restart are not missed
   runBookingReminderOnce();
 
   reminderTimer = setInterval(

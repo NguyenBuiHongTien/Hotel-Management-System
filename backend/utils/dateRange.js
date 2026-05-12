@@ -1,13 +1,13 @@
 /**
- * Chuẩn hóa filter theo ngày (date-only từ input type="date").
- * from: đầu ngày, to: cuối ngày — tránh bỏ sót bản ghi trong ngày cuối khi dùng $lte.
+ * Normalize date-only filters (from HTML date inputs).
+ * from: start of day, to: end of day — avoids missing records on the last day when using $lte.
  */
 function parseDateInput(d) {
   if (d instanceof Date) return new Date(d.getTime());
   const s = String(d || '').trim();
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
   if (m) {
-    // Parse date-only theo local timezone để không bị lệch UTC.
+    // Parse date-only in local timezone to avoid UTC shift.
     return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
   }
   return new Date(s);
@@ -32,4 +32,9 @@ function parseInclusiveRange(fromDate, toDate) {
   };
 }
 
-module.exports = { startOfDay, endOfDay, parseInclusiveRange };
+module.exports = {
+  parseDateInput,
+  startOfDay,
+  endOfDay,
+  parseInclusiveRange,
+};

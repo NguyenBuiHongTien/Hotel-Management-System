@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { bookingService } from '../services/bookingService';
+import { asArray } from '../utils/apiNormalize';
 
 export const useBookings = () => {
   const [bookings, setBookings] = useState([]);
@@ -14,7 +15,7 @@ export const useBookings = () => {
     try {
       setIsLoading(true);
       const data = await bookingService.getAllBookings();
-      setBookings(data.bookings ?? data);
+      setBookings(asArray(data, 'bookings'));
       setError(null);
     } catch (err) {
       setError(err.message);

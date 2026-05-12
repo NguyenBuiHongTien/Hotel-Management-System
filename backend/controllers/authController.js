@@ -2,7 +2,6 @@ const asyncHandler = require('express-async-handler');
 const jwt = require('jsonwebtoken');
 const User = require('../models/userModel');
 
-// Hàm helper để tạo token
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
         expiresIn: '30d',
@@ -10,16 +9,16 @@ const generateToken = (id) => {
 };
 
 /**
- * @desc    Đăng nhập (xác thực) người dùng
+ * @desc    Login
  * @route   POST /api/auth/login
  * @access  Public
  */
 const loginUser = asyncHandler(async (req, res) => {
-    const { email, password } = req.body; // Dùng email theo userModel
+    const { email, password } = req.body;
 
     if (!email || !password) {
         res.status(400);
-        throw new Error('Vui lòng cung cấp email và mật khẩu');
+        throw new Error('Email and password are required');
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
@@ -28,24 +27,23 @@ const loginUser = asyncHandler(async (req, res) => {
     if (user && (await user.matchPassword(password))) {
         res.json({
             _id: user._id,
-            name: user.name, // Khớp với userModel
+            name: user.name,
             email: user.email,
             role: user.role,
             token: generateToken(user._id),
         });
     } else {
         res.status(401);
-        throw new Error('Email hoặc mật khẩu không hợp lệ');
+        throw new Error('Invalid email or password');
     }
 });
 
 /**
- * @desc    Lấy thông tin profile của user đang đăng nhập
+ * @desc    Get logged-in user profile
  * @route   GET /api/auth/profile
  * @access  Private
  */
 const getProfile = asyncHandler(async (req, res) => {
-    // req.user được gán từ middleware 'protect'
     const user = await User.findById(req.user._id).select('-password');
     
     if (user) {
@@ -57,19 +55,17 @@ const getProfile = asyncHandler(async (req, res) => {
         });
     } else {
         res.status(404);
-        throw new Error('Không tìm thấy người dùng');
+        throw new Error('User not found');
     }
 });
 
 /**
- * @desc    Đăng xuất người dùng
+ * @desc    Logout
  * @route   POST /api/auth/logout
  * @access  Private
  */
 const logoutUser = asyncHandler(async (req, res) => {
-  // Với JWT, client chỉ cần xóa token.
-  // Nếu dùng cookie, bạn sẽ xóa cookie tại đây.
-  res.status(200).json({ message: 'Đăng xuất thành công' });
+  res.status(200).json({ message: 'Logged out successfully' });
 });
 
 module.exports = { 

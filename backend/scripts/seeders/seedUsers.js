@@ -7,31 +7,31 @@ module.exports = async function seedUsers() {
       {
         name: 'Manager',
         email: 'manager@hotel.com',
-        password: await bcrypt.hash('123456', 10),
+        password: await bcrypt.hash('HotelDemo1', 10),
         role: 'manager'
       },
       {
         name: 'Receptionist',
         email: 'receptionist@hotel.com',
-        password: await bcrypt.hash('123456', 10),
+        password: await bcrypt.hash('HotelDemo1', 10),
         role: 'receptionist'
       },
       {
         name: 'Accountant',
         email: 'accountant@hotel.com',
-        password: await bcrypt.hash('123456', 10),
+        password: await bcrypt.hash('HotelDemo1', 10),
         role: 'accountant'
       },
       {
         name: 'Housekeeper',
         email: 'housekeeper@hotel.com',
-        password: await bcrypt.hash('123456', 10),
+        password: await bcrypt.hash('HotelDemo1', 10),
         role: 'housekeeper'
       },
       {
         name: 'Maintenance',
         email: 'maintenance@hotel.com',
-        password: await bcrypt.hash('123456', 10),
+        password: await bcrypt.hash('HotelDemo1', 10),
         role: 'maintenance'
       }
     ];

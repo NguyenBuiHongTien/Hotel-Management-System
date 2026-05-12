@@ -9,9 +9,11 @@ const {
     logoutUser
 } = require('../../controllers/authController');
 const { protect } = require('../../middleware/authMiddleware');
+const { validate } = require('../../middleware/validationMiddleware');
+const { loginRules } = require('../../validators/authValidators');
 
 // Public routes
-router.post('/login',loginLimiter, loginUser);
+router.post('/login', loginLimiter, loginRules, validate, loginUser);
 
 // Protected routes
 router.get('/profile', protect, getProfile);

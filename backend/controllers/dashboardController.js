@@ -4,13 +4,13 @@ const Invoice = require('../models/invoiceModel');
 const { startOfDay, endOfDay } = require('../utils/dateRange');
 
 /**
- * @desc    Lấy số liệu doanh thu (nhanh) cho dashboard
+ * @desc    Revenue summary for dashboard
  * @route   GET /api/dashboard/revenue
  * @access  Private (Manager)
  */
 const getRevenueDashboard = asyncHandler(async (req, res, next) => {
-    const { fromDate, toDate } = req.query; // (Tùy chọn)
-    
+    const { fromDate, toDate } = req.query;
+
     const matchFilter = { paymentStatus: 'paid' };
     if (fromDate || toDate) {
         matchFilter.updatedAt = {};
@@ -32,12 +32,12 @@ const getRevenueDashboard = asyncHandler(async (req, res, next) => {
             }
         }
     ]);
-    
+
     res.json(revenueAgg[0] || { totalRevenue: 0, totalInvoices: 0 });
 });
 
 /**
- * @desc    Lấy trạng thái phòng (real-time)
+ * @desc    Real-time room status counts
  * @route   GET /api/rooms/status/realtime
  * @access  Private (Manager, Receptionist)
  */
@@ -46,9 +46,9 @@ const getRealtimeRoomStatus = asyncHandler(async (req, res, next) => {
         { $group: { _id: '$status', count: { $sum: 1 } } },
         { $sort: { _id: 1 } }
     ]);
-    
+
     const totalRooms = await Room.countDocuments();
-    
+
     res.json({
         totalRooms,
         statsByStatus: roomStats

@@ -1,0 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+/* Global tokens — gold / black dashboard (aligned with login page) */
+:root {
+  --dash-font-ui: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --dash-font-display: 'Cormorant Garamond', Georgia, serif;
+  --dash-black: #08080a;
+  --dash-surface: #0e0e12;
+  --dash-elevated: #131318;
+  --dash-elevated2: #1a1a22;
+  --dash-border: rgba(255, 255, 255, 0.08);
+  --dash-border-gold: rgba(212, 175, 55, 0.28);
+  --dash-border-strong: rgba(212, 175, 55, 0.42);
+  --dash-gold: #d4af37;
+  --dash-gold-bright: #e8c547;
+  --dash-gold-soft: #c9a227;
+  --dash-gold-muted: rgba(212, 175, 55, 0.55);
+  --dash-gold-glow: rgba(212, 175, 55, 0.14);
+  --dash-text: #f4f1ea;
+  --dash-text-muted: rgba(244, 241, 234, 0.6);
+  --dash-text-dim: rgba(244, 241, 234, 0.38);
+  --dash-danger: #f87171;
+  --dash-success: #86efac;
+  --dash-warning: #fcd34d;
+  --dash-radius-sm: 0.5rem;
+  --dash-radius-md: 0.75rem;
+  --dash-radius-lg: 1rem;
+  --dash-shadow-elevated: 0 18px 48px rgba(0, 0, 0, 0.55);
+}

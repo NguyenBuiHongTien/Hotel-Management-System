@@ -9,7 +9,7 @@ const { protect, authorize } = require('../../middleware/authMiddleware');
 const { createPaymentRules, transactionQueryRules } = require('../../validators/paymentValidators');
 const { validate } = require('../../middleware/validationMiddleware');
 
-// Ghi nhận thanh toán (Lễ tân, Kế toán)
+// Record payment (receptionist, accountant)
 router.post('/payments',
     protect,
     authorize('receptionist', 'accountant'),
@@ -18,7 +18,7 @@ router.post('/payments',
     recordPayment
 );
 
-// Xem giao dịch (Kế toán, Quản lý)
+// Transaction history (accountant, manager)
 router.get('/transactions',
     protect,
     authorize('accountant', 'manager'),

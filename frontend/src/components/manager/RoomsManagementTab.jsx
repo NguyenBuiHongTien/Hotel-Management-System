@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit } from 'lucide-react';
 import { roomService } from '../../services/roomService';
 import { roomTypeService } from '../../services/roomTypeService';
+import { asArray } from '../../utils/apiNormalize';
 import styles from '../../styles/Dashboard.module.css';
 import tableStyles from '../../styles/Table.module.css';
 import buttonStyles from '../../styles/Button.module.css';
@@ -26,10 +27,10 @@ const RoomsManagementTab = () => {
       const filters = {};
       if (statusFilter !== 'all') filters.status = statusFilter;
       const data = await roomService.getAllRooms(filters);
-      setRooms(Array.isArray(data) ? data : (data.data || []));
+      setRooms(asArray(data, 'rooms'));
     } catch (err) {
       console.error('Error loading rooms:', err);
-      alert('Không thể tải danh sách phòng');
+      alert('Could not load rooms');
     } finally {
       setLoading(false);
     }
@@ -38,7 +39,7 @@ const RoomsManagementTab = () => {
   const loadRoomTypes = useCallback(async () => {
     try {
       const data = await roomTypeService.getAllRoomTypes();
-      setRoomTypes(Array.isArray(data) ? data : (data.data || []));
+      setRoomTypes(asArray(data, 'roomTypes'));
     } catch (err) {
       console.error('Error loading room types:', err);
     }
@@ -48,7 +49,7 @@ const RoomsManagementTab = () => {
     loadRooms();
     loadRoomTypes();
 
-    // Auto-refresh mỗi 30 giây để đồng bộ trạng thái
+    // Auto-refresh every 30s to stay in sync
     const interval = setInterval(() => {
       loadRooms();
     }, 30000);
@@ -65,17 +66,17 @@ const RoomsManagementTab = () => {
           roomTypeId: formData.roomTypeId,
           floor: formData.floor
         });
-        alert('Cập nhật phòng thành công!');
+        alert('Room updated!');
       } else {
         await roomService.createRoom(formData);
-        alert('Tạo phòng mới thành công!');
+        alert('Room created!');
       }
       setShowModal(false);
       setFormData({ roomNumber: '', roomTypeId: '', floor: '', status: 'available' });
       setEditingRoomId(null);
       loadRooms();
     } catch (err) {
-      alert('Lỗi: ' + (err.message || 'Không thể lưu phòng'));
+      alert('Error: ' + (err.message || 'Could not save room'));
     }
   };
 
@@ -92,19 +93,19 @@ const RoomsManagementTab = () => {
 
   const getStatusLabel = (status) => {
     const labels = {
-      'available': 'Sẵn sàng',
-      'occupied': 'Đang có khách',
-      'dirty': 'Cần dọn',
-      'cleaning': 'Đang dọn',
-      'maintenance': 'Bảo trì'
+      'available': 'Available',
+      'occupied': 'Occupied',
+      'dirty': 'Needs cleaning',
+      'cleaning': 'Cleaning',
+      'maintenance': 'Maintenance'
     };
     return labels[status] || status;
   };
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h2 className={styles.sectionTitle}>Quản lý phòng</h2>
+      <div className={styles.flexBetween}>
+        <h2 className={styles.sectionTitle}>Rooms</h2>
         <button
           className={`${buttonStyles.primary} ${buttonStyles.md}`}
           onClick={() => {
@@ -113,49 +114,44 @@ const RoomsManagementTab = () => {
             setShowModal(true);
           }}
         >
-          <Plus size={18} style={{ marginRight: '0.5rem' }} />
-          Thêm phòng
+          <Plus size={18} aria-hidden />
+          Add room
         </button>
       </div>
 
-      {/* Filter */}
-      <div style={{ marginBottom: '1.5rem' }}>
+      <div className={styles.mbLg}>
+        <label className={styles.formLabel} htmlFor="room-status-filter">Filter by status</label>
         <select
+          id="room-status-filter"
+          className={`${styles.formInputDark} ${styles.selectNarrow}`}
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          style={{
-            padding: '0.5rem 1rem',
-            borderRadius: '0.375rem',
-            border: '1px solid #d1d5db',
-            fontSize: '0.875rem'
-          }}
         >
-          <option value="all">Tất cả trạng thái</option>
-          <option value="available">Trống</option>
-          <option value="occupied">Đã thuê</option>
-          <option value="dirty">Cần dọn</option>
-          <option value="cleaning">Đang dọn</option>
-          <option value="maintenance">Bảo trì</option>
+          <option value="all">All statuses</option>
+          <option value="available">Vacant</option>
+          <option value="occupied">Occupied</option>
+          <option value="dirty">Needs cleaning</option>
+          <option value="cleaning">Cleaning</option>
+          <option value="maintenance">Maintenance</option>
         </select>
       </div>
 
-      {/* Table */}
       <div className={tableStyles.tableContainer}>
         <table className={tableStyles.table}>
           <thead>
             <tr>
-              <th className={tableStyles.th}>Số phòng</th>
-              <th className={tableStyles.th}>Tầng</th>
-              <th className={tableStyles.th}>Loại phòng</th>
-              <th className={tableStyles.th}>Trạng thái</th>
-              <th className={tableStyles.th}>Thao tác</th>
+              <th className={tableStyles.th}>Room #</th>
+              <th className={tableStyles.th}>Floor</th>
+              <th className={tableStyles.th}>Room type</th>
+              <th className={tableStyles.th}>Status</th>
+              <th className={tableStyles.th}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td className={tableStyles.td} colSpan={5}>Đang tải...</td></tr>
+              <tr><td className={tableStyles.td} colSpan={5}>Loading...</td></tr>
             ) : rooms.length === 0 ? (
-              <tr><td className={tableStyles.td} colSpan={5}>Không có phòng nào</td></tr>
+              <tr><td className={tableStyles.td} colSpan={5}>No rooms</td></tr>
             ) : (
               rooms.map(room => (
                 <tr key={room._id}>
@@ -167,7 +163,7 @@ const RoomsManagementTab = () => {
                     <button
                       className={tableStyles.actionBtn}
                       onClick={() => handleEdit(room)}
-                      title="Chỉnh sửa"
+                      title="Edit"
                     >
                       <Edit size={16} />
                     </button>
@@ -179,95 +175,70 @@ const RoomsManagementTab = () => {
         </table>
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h2>{editingRoomId ? 'Chỉnh sửa phòng' : 'Thêm phòng mới'}</h2>
+            <h2 className={styles.modalFormTitle}>{editingRoomId ? 'Edit room' : 'New room'}</h2>
             <form onSubmit={handleSubmit}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div className={styles.modalFormStack}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-                    Số phòng <span style={{ color: '#ef4444' }}>*</span>
+                  <label className={styles.formLabel}>
+                    Room number <span className={styles.reqStar}>*</span>
                   </label>
                   <input
                     type="text"
+                    className={styles.formInputDark}
                     required
                     value={formData.roomNumber}
                     onChange={(e) => setFormData({ ...formData, roomNumber: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
-                      fontSize: '0.875rem'
-                    }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-                    Loại phòng <span style={{ color: '#ef4444' }}>*</span>
+                  <label className={styles.formLabel}>
+                    Room type <span className={styles.reqStar}>*</span>
                   </label>
                   <select
+                    className={styles.formInputDark}
                     required
                     value={formData.roomTypeId}
                     onChange={(e) => setFormData({ ...formData, roomTypeId: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
-                      fontSize: '0.875rem'
-                    }}
                   >
-                    <option value="">Chọn loại phòng</option>
+                    <option value="">Select room type</option>
                     {roomTypes.map(rt => (
                       <option key={rt._id} value={rt._id}>{rt.typeName}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-                    Tầng <span style={{ color: '#ef4444' }}>*</span>
+                  <label className={styles.formLabel}>
+                    Floor <span className={styles.reqStar}>*</span>
                   </label>
                   <input
                     type="text"
+                    className={styles.formInputDark}
                     required
                     value={formData.floor}
                     onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
-                      fontSize: '0.875rem'
-                    }}
                   />
                 </div>
                 {!editingRoomId && (
                   <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-                      Trạng thái ban đầu
+                    <label className={styles.formLabel}>
+                      Initial status
                     </label>
                     <select
+                      className={styles.formInputDark}
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      style={{
-                        width: '100%',
-                        padding: '0.5rem 0.75rem',
-                        borderRadius: '0.375rem',
-                        border: '1px solid #d1d5db',
-                        fontSize: '0.875rem'
-                      }}
                     >
-                      <option value="available">Trống</option>
-                      <option value="dirty">Cần dọn</option>
-                      <option value="maintenance">Bảo trì</option>
+                      <option value="available">Vacant</option>
+                      <option value="dirty">Needs cleaning</option>
+                      <option value="maintenance">Maintenance</option>
                     </select>
                   </div>
                 )}
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+              <div className={styles.modalFooterBar}>
                 <button
                   type="button"
                   className={`${buttonStyles.secondary} ${buttonStyles.md}`}
@@ -277,13 +248,13 @@ const RoomsManagementTab = () => {
                     setFormData({ roomNumber: '', roomTypeId: '', floor: '', status: 'available' });
                   }}
                 >
-                  Hủy
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className={`${buttonStyles.primary} ${buttonStyles.md}`}
                 >
-                  {editingRoomId ? 'Cập nhật' : 'Tạo mới'}
+                  {editingRoomId ? 'Update' : 'Create'}
                 </button>
               </div>
             </form>
@@ -295,4 +266,3 @@ const RoomsManagementTab = () => {
 };
 
 export default RoomsManagementTab;
-

@@ -2,7 +2,7 @@ const Room = require('../../models/roomModel');
 const RoomType = require('../../models/roomTypeModel');
 
 module.exports = async function seedRooms() {
-    // Kiểm tra xem đã có Room Types chưa
+    // Ensure room types exist
     const roomTypes = await RoomType.find();
     if (roomTypes.length === 0) {
       throw new Error('No room types found. Run seed:room-types first.');
@@ -11,7 +11,7 @@ module.exports = async function seedRooms() {
     console.log('📝 Seeding Rooms...');
     await Room.deleteMany({});
     
-    // Tìm các room types
+    // Resolve room type documents
     const singleType = await RoomType.findOne({ typeName: 'Single' });
     const doubleType = await RoomType.findOne({ typeName: 'Double' });
     const twinType = await RoomType.findOne({ typeName: 'Twin' });

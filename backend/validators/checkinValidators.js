@@ -1,8 +1,8 @@
 const { body } = require('express-validator');
 
 const bookingIdRule = body('bookingId')
-  .notEmpty().withMessage('bookingId là bắt buộc')
-  .isMongoId().withMessage('bookingId không đúng định dạng');
+  .notEmpty().withMessage('bookingId is required')
+  .isMongoId().withMessage('bookingId must be a valid Mongo ID');
 
 const checkInRules = [bookingIdRule];
 const checkOutRules = [bookingIdRule];

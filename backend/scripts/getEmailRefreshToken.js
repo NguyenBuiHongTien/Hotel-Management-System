@@ -1,12 +1,12 @@
 /**
- * OAuth2 — lấy GMAIL_REFRESH_TOKEN (scope gmail.send).
+ * OAuth2 — obtain GMAIL_REFRESH_TOKEN (gmail.send scope).
  *
- * So với hướng "readline + dán code thủ công": cách này dùng redirect về localhost
- * và đổi code → token tự động; kết quả giống nhau, UX chuyên nghiệp hơn.
+ * Uses localhost redirect and exchanges the code for tokens automatically
+ * (no manual readline/paste flow).
  *
- * Chạy: npm run gmail:token (từ thư mục backend)
- * Cần: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET trong backend/.env
- * Google Cloud: OAuth client (Web) + Authorized redirect URI khớp REDIRECT_URI in ra khi chạy.
+ * Run: npm run gmail:token (from backend folder)
+ * Requires: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET in backend/.env
+ * Google Cloud: Web OAuth client + Authorized redirect URI matching REDIRECT_URI printed below.
  */
 
 const path = require('path');
@@ -31,7 +31,7 @@ function main() {
 
   if (!clientId || !clientSecret) {
     console.error(
-      'Thiếu GOOGLE_CLIENT_ID hoặc GOOGLE_CLIENT_SECRET trong backend/.env'
+      'Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET in backend/.env'
     );
     process.exit(1);
   }
@@ -60,7 +60,7 @@ function main() {
       const errParam = u.searchParams.get('error');
       if (errParam) {
         res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(`<p>OAuth lỗi: ${errParam}</p>`);
+        res.end(`<p>OAuth error: ${errParam}</p>`);
         server.close();
         process.exit(1);
         return;
@@ -69,7 +69,7 @@ function main() {
       const code = u.searchParams.get('code');
       if (!code) {
         res.writeHead(400);
-        res.end('Thiếu ?code=');
+        res.end('Missing ?code=');
         server.close();
         process.exit(1);
         return;
@@ -80,21 +80,21 @@ function main() {
 
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(
-        '<meta charset="utf-8"><h1>Thành công</h1><p>Bạn có thể đóng tab. Xem refresh token trong terminal.</p>'
+        '<meta charset="utf-8"><h1>Success</h1><p>You can close this tab. See the refresh token in the terminal.</p>'
       );
 
       server.close();
 
-      console.log('\n--- Thêm vào backend/.env (hoặc secret manager) ---\n');
+      console.log('\n--- Add to backend/.env (or your secret store) ---\n');
       if (tokens.refresh_token) {
         console.log(`GMAIL_REFRESH_TOKEN=${tokens.refresh_token}`);
       } else {
         console.warn(
-          'Không có refresh_token. Thử: thu hồi quyền app trong Google Account > Bảo mật > Quyền truy cập của bên thứ ba, rồi chạy lại script; hoặc đảm bảo prompt=consent và access_type=offline.'
+          'No refresh_token returned. Try: revoke app access in Google Account > Security > Third-party access, then run again; or ensure prompt=consent and access_type=offline.'
         );
       }
       console.log(
-        '\nGMAIL_SENDER_EMAIL=<email đã đăng nhập khi authorize>\n'
+        '\nGMAIL_SENDER_EMAIL=<Gmail address used when you authorized>\n'
       );
       process.exit(0);
     } catch (e) {
@@ -109,14 +109,14 @@ function main() {
   });
 
   server.listen(REDIRECT_PORT, () => {
-    console.log('Redirect URI phải khớp Google Cloud Console:\n  ', REDIRECT_URI);
-    console.log('\nMở URL sau trong trình duyệt và đăng nhập tài khoản Gmail gửi mail:\n');
+    console.log('Redirect URI must match Google Cloud Console:\n  ', REDIRECT_URI);
+    console.log('\nOpen this URL in a browser and sign in with the Gmail sender account:\n');
     console.log(authUrl);
     console.log('');
   });
 
   server.on('error', (err) => {
-    console.error('Không mở được server localhost (port đã bị chiếm?):', err.message);
+    console.error('Could not start localhost server (port in use?):', err.message);
     process.exit(1);
   });
 }

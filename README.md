@@ -1,8 +1,8 @@
 <h1 align="center">Hotel Management System (SOA)</h1>
 
 <p align="center">
-  Hệ thống quản lý khách sạn theo kiến trúc dịch vụ (SOA) với dashboard theo vai trò,<br/>
-  REST API bảo mật JWT và triển khai toàn stack bằng Docker Compose.
+  Service-oriented hotel management with role-based dashboards,<br/>
+  JWT-secured REST API, and full-stack Docker Compose deployment.
 </p>
 
 <p align="center">
@@ -16,37 +16,39 @@
 
 ---
 
-## Tổng quan
+## Overview
 
-Hệ thống gồm:
-- **Backend**: Node.js + Express + MongoDB, cung cấp REST API cho nghiệp vụ khách sạn.
-- **Frontend**: React + Vite, giao diện dashboard riêng theo vai trò người dùng.
-- **Triển khai**: Docker Compose với profile `dev` và `prod`.
+The system includes:
+- **Backend**: Node.js + Express + MongoDB, REST API for hotel operations.
+- **Frontend**: React + Vite, role-specific dashboards.
+- **Deployment**: Docker Compose with `dev` and `prod` profiles.
 
-Vai trò hỗ trợ: `manager`, `receptionist`, `accountant`, `housekeeper`, `maintenance`.
-
----
-
-## Tính năng chính
-
-- Xác thực JWT, phân quyền theo vai trò.
-- Quản lý đặt phòng, phòng, loại phòng, khách hàng.
-- Nghiệp vụ check-in/check-out và thanh toán.
-- Quản lý hóa đơn, giao dịch, báo cáo doanh thu/công suất.
-- Quản lý yêu cầu bảo trì và trạng thái xử lý.
-- Dashboard riêng theo vai trò người dùng.
-- Tích hợp gửi email nhắc lịch qua Gmail API.
+Supported roles: `manager`, `receptionist`, `accountant`, `housekeeper`, `maintenance`.
 
 ---
 
-## Công nghệ sử dụng
+## Main features
+
+- JWT authentication and role-based access.
+- Bookings, rooms, room types, and guests.
+- Check-in / check-out and payments.
+- Invoices, transactions, revenue and occupancy reports.
+- Staff accounts (manager).
+- Maintenance requests and workflow status.
+- Role-specific dashboards.
+- Optional Gmail API for booking reminders.
+
+---
+
+## Tech stack
 
 ### Backend
 - Node.js, Express
 - MongoDB, Mongoose
 - JWT, bcryptjs
 - express-validator, express-rate-limit, helmet
-- Google APIs (gmail)
+- Google APIs (Gmail)
+- Jest, Supertest
 
 ### Frontend
 - React + Vite
@@ -57,10 +59,11 @@ Vai trò hỗ trợ: `manager`, `receptionist`, `accountant`, `housekeeper`, `ma
 
 ### DevOps
 - Docker, Docker Compose
+- GitHub Actions (CI: backend tests, frontend tests + build — see `.github/workflows/ci.yml`)
 
 ---
 
-## Cấu trúc thư mục
+## Repository layout
 
 ```text
 CK_SOA/
@@ -82,6 +85,7 @@ CK_SOA/
 │  ├─ src/config/api.js
 │  ├─ vite.config.js
 │  └─ Dockerfile
+├─ .github/workflows/ci.yml
 ├─ mongo-init/rs-init.js
 ├─ docker-compose.yml
 └─ Postman_Collection.json
@@ -89,16 +93,16 @@ CK_SOA/
 
 ---
 
-## Yêu cầu môi trường
+## Prerequisites
 
-- Node.js LTS (khuyến nghị 18+)
+- Node.js LTS (18+ recommended)
 - npm
-- MongoDB (nếu chạy local không dùng Docker)
-- Docker Desktop (nếu chạy bằng Docker)
+- MongoDB (if not using Docker locally)
+- Docker Desktop (if using Docker)
 
 ---
 
-## Cấu hình môi trường
+## Environment configuration
 
 ### 1) Backend `backend/.env`
 
@@ -113,10 +117,10 @@ GMAIL_REFRESH_TOKEN=
 GMAIL_SENDER_EMAIL=
 ```
 
-> Lưu ý bảo mật: không commit giá trị secret thật lên GitHub.
-> `JWT_SECRET` nên có tối thiểu 16 ký tự.
+> Security: do not commit real secrets to GitHub.  
+> `JWT_SECRET` should be at least 16 characters.
 
-### 2) Frontend `frontend/.env` (tùy chọn)
+### 2) Frontend `frontend/.env` (optional)
 
 ```env
 VITE_API_URL=http://localhost:5000/api
@@ -124,9 +128,9 @@ VITE_API_URL=http://localhost:5000/api
 
 ---
 
-## Chạy dự án (Local Development)
+## Local development
 
-### Bước 1: Cài dependencies
+### Step 1: Install dependencies
 
 ```bash
 cd backend
@@ -136,52 +140,52 @@ cd ../frontend
 npm install
 ```
 
-### Bước 2: Chạy backend
+### Step 2: Run backend
 
 ```bash
 cd backend
 npm start
 ```
 
-Backend chạy tại: `http://localhost:5000`
+Backend: `http://localhost:5000`
 
-### Bước 3: Chạy frontend (Vite)
+### Step 3: Run frontend (Vite)
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-Frontend chạy tại: `http://localhost:5173`
+Frontend: `http://localhost:5173`
 
 ---
 
-## Chạy bằng Docker Compose (profiles dev/prod)
+## Docker Compose (`dev` / `prod`)
 
-Từ thư mục gốc project:
+From the project root:
 
-> Quan trọng: file `docker-compose.yml` đọc biến như `JWT_SECRET`, `GOOGLE_CLIENT_ID`... từ **`.env` ở thư mục gốc project** (không phải `backend/.env`).
-> Hãy tạo `.env` ở root trước khi chạy compose.
+> Important: `docker-compose.yml` reads variables such as `JWT_SECRET`, `GOOGLE_CLIENT_ID`, … from **`.env` in the project root** (not `backend/.env`).  
+> Create root `.env` before running Compose.
 
 ```bash
-# Production profile (Nginx + image optimized)
+# Production profile (Nginx + optimized image)
 docker compose --profile prod up -d --build
 
-# Development profile (hot reload qua volume mount)
+# Development profile (hot reload via volume mounts)
 docker compose --profile dev up -d --build
 ```
 
-Sau khi chạy profile `prod`:
+After `prod` profile:
 - Frontend: `http://localhost:3000`
 - Backend API: `http://localhost:5000/api`
 
-Sau khi chạy profile `dev`:
+After `dev` profile:
 - Frontend: `http://localhost:5173`
 - Backend API: `http://localhost:5000/api`
 
-MongoDB: `mongodb://localhost:27017`
+MongoDB: `mongodb://localhost:27017` (container runs replica set `rs0`; on a fresh volume, `mongo-init/rs-init.js` runs `rs.initiate`).
 
-Dừng hệ thống:
+Stop:
 
 ```bash
 docker compose down
@@ -189,15 +193,15 @@ docker compose down
 
 ---
 
-## Seed dữ liệu mẫu
+## Sample data (seed)
 
-Trong `backend/`:
+In `backend/`:
 
 ```bash
 npm run seed:all
 ```
 
-Hoặc seed riêng:
+Or individual seeds:
 
 ```bash
 npm run seed:users
@@ -205,58 +209,62 @@ npm run seed:room-types
 npm run seed:rooms
 ```
 
-### Tài khoản test (sau khi seed users)
+### Test accounts (after seeding users)
+
 - `manager@hotel.com`
 - `receptionist@hotel.com`
 - `accountant@hotel.com`
 - `housekeeper@hotel.com`
 - `maintenance@hotel.com`
 
-Mật khẩu mặc định: `123456`
+Default password (after `npm run seed:users`): `HotelDemo1` (8+ chars, letter + number).
 
 ---
 
-## API chính
+## Main API
 
-Base URL: `/api`
+**Base URL:** `http://localhost:5000/api` (paths below are relative to `/api`).
 
-- `POST /auth/login`
-- `GET /auth/profile`
-- `POST /auth/logout`
-- `GET|POST /bookings`
-- `POST /checkin`, `POST /checkout`
-- `GET|POST /rooms`, `PUT /rooms/:roomId/status`
-- `GET|POST /guests`
-- `GET /invoices`, `GET /transactions`, `POST /payments`
-- `GET /reports/revenue`, `GET /reports/occupancy`
-- `GET /dashboard/revenue`
-- `POST /maintenance/issues`, `GET /maintenance/requests`
+Most endpoints require `Authorization: Bearer <token>`; `POST /auth/login` is public.
 
-Bạn có thể import `Postman_Collection.json` để test API nhanh.
+- **Auth:** `POST /auth/login`, `GET /auth/profile`, `POST /auth/logout`
+- **Bookings:** `GET|POST /bookings`, `GET|PUT /bookings/:bookingId`, `POST /bookings/:bookingId/cancel`, `POST /bookings/:bookingId/invoice`
+- **Check-in/out:** `POST /checkin`, `POST /checkout`
+- **Rooms:** `GET|POST /rooms`, `GET /rooms/:roomId`, `PUT /rooms/:roomId`, `PUT /rooms/:roomId/status` (plus helper `GET`s: available, cleaning, maintenance, …)
+- **Room types:** `GET|POST /room-types`, `GET|PUT|DELETE /room-types/:id`
+- **Guests:** `GET|POST /guests`, `GET|PUT|DELETE /guests/:guestId`
+- **Employees (manager):** `GET|POST /employees`, `GET|PUT|DELETE /employees/:id`
+- **Invoices / payments:** `GET /invoices`, `GET /invoices/:invoiceId`, `GET /invoices/guest/:bookingId`, `GET /invoices/financial/:bookingId`, `GET /transactions`, `POST /payments`
+- **Reports:** `GET /reports/revenue`, `GET /reports/occupancy`, plus save/export routes (see `reportRoutes.js`)
+- **Dashboard (manager):** `GET /dashboard/revenue`
+- **Maintenance:** `POST /maintenance/issues`, `GET /maintenance/requests`, `GET /maintenance/requests/:requestId`, `PUT /maintenance/:requestId`, `PUT /maintenance/:requestId/complete`
+
+Import `Postman_Collection.json` for quick API testing.
 
 ---
 
-## Scripts hữu ích
+## Useful scripts
 
 ### Backend
-- `npm start`: chạy server
-- `npm test`: chạy test
-- `npm run seed:all`: seed toàn bộ
-- `npm run gmail:token`: lấy refresh token Gmail
-- `npm run check-role`: kiểm tra role user
-- `npm run fix-accountant`: sửa role accountant nếu sai
+- `npm start`: run server
+- `npm test`: Jest tests
+- `npm run seed:all`: run all seeds
+- `npm run gmail:token`: obtain Gmail refresh token
+- `npm run check-role`: inspect user role
+- `npm run fix-accountant`: fix mis-typed accountant role
 
 ### Frontend
-- `npm run dev`: chạy Vite dev server
-- `npm run build`: build production
-- `npm test`: chạy test (Vitest)
+- `npm run dev`: Vite dev server
+- `npm run build`: production build
+- `npm test`: Vitest
 
 ---
 
 ## Roadmap
 
-- [ ] Bổ sung tài liệu API đầy đủ (Swagger/OpenAPI public).
-- [ ] Thêm test tích hợp backend và test UI frontend.
-- [ ] Hoàn thiện phân lớp service theo bounded context rõ hơn.
-- [ ] Thiết lập CI/CD (lint, test, build, deploy).
-- [ ] Thêm phân quyền chi tiết hơn theo action-level.
+- [ ] Full API docs (Swagger/OpenAPI — dependency exists in `package.json` but UI not wired in `server.js`).
+- [ ] More backend integration tests and frontend UI tests.
+- [ ] Clearer service layer per bounded context.
+- [x] Basic CI: GitHub Actions runs backend tests + frontend tests and build (see `.github/workflows/ci.yml`).
+- [ ] Expand CI/CD: lint, artifacts, automated deploy.
+- [ ] Finer-grained action-level authorization.

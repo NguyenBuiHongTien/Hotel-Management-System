@@ -1,6 +1,6 @@
 /**
- * Tạo backend/.env từ .env.example nếu chưa có (sau merge thường bị thiếu file .env local).
- * Chạy: npm run env:init
+ * Create backend/.env from .env.example if missing (common after merges).
+ * Run: npm run env:init
  */
 const fs = require('fs');
 const path = require('path');
@@ -10,14 +10,14 @@ const envPath = path.join(root, '.env');
 const examplePath = path.join(root, '.env.example');
 
 if (!fs.existsSync(examplePath)) {
-  console.error('Không tìm thấy backend/.env.example');
+  console.error('backend/.env.example not found');
   process.exit(1);
 }
 
 if (fs.existsSync(envPath)) {
-  console.log('backend/.env đã tồn tại — bỏ qua (xóa file nếu muốn tạo lại từ .env.example).');
+  console.log('backend/.env already exists — skipping (delete the file to recreate from .env.example).');
   process.exit(0);
 }
 
 fs.copyFileSync(examplePath, envPath);
-console.log('Đã tạo backend/.env từ backend/.env.example — hãy điền JWT_SECRET và Gmail (nếu dùng).');
+console.log('Created backend/.env from backend/.env.example — fill in JWT_SECRET and Gmail settings if needed.');

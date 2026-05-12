@@ -23,7 +23,7 @@ const RoomsTab = () => {
     }
   }, [rooms, statusFilter]);
 
-  // Auto-refresh mỗi 30 giây để đồng bộ trạng thái
+  // Auto-refresh every 30s to stay in sync
   useEffect(() => {
     const interval = setInterval(() => {
       refetch();
@@ -33,20 +33,20 @@ const RoomsTab = () => {
   }, [refetch]);
 
   if (isLoading) {
-    return <div>Đang tải phòng...</div>;
+    return <div>Loading rooms...</div>;
   }
 
   if (error) {
-    return <div>Lỗi: {error}</div>;
+    return <div>Error: {error}</div>;
   }
 
   const handleUpdateStatus = async (room, status) => {
     try {
       await updateRoomStatus(room._id, status);
-      alert(`Đã cập nhật trạng thái phòng ${room.roomNumber} thành "${getStatusLabel(status)}".`);
+      alert(`Room ${room.roomNumber} status updated to "${getStatusLabel(status)}".`);
       await refetch();
     } catch (err) {
-      alert('Không thể cập nhật trạng thái: ' + (err.message || ''));
+      alert('Could not update status: ' + (err.message || ''));
     }
   };
 
@@ -66,11 +66,11 @@ const RoomsTab = () => {
 
   const getStatusLabel = (status) => {
     const labels = {
-      'available': 'Sẵn sàng',
-      'occupied': 'Đang có khách',
-      'dirty': 'Cần dọn',
-      'cleaning': 'Đang dọn',
-      'maintenance': 'Bảo trì'
+      'available': 'Available',
+      'occupied': 'Occupied',
+      'dirty': 'Needs cleaning',
+      'cleaning': 'Cleaning',
+      'maintenance': 'Maintenance'
     };
     return labels[status] || status;
   };
@@ -92,56 +92,44 @@ const RoomsTab = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h2 className={styles.sectionTitle}>Trạng thái phòng</h2>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+      <div className={styles.flexBetween}>
+        <h2 className={styles.sectionTitle}>Room status</h2>
+        <div className={styles.rowActions}>
           <select
+            className={`${styles.formInputDark} ${styles.selectNarrow}`}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: '0.375rem',
-              border: '1px solid #d1d5db',
-              fontSize: '0.875rem'
-            }}
           >
-            <option value="all">Tất cả</option>
-            <option value="available">Trống</option>
-            <option value="occupied">Đã thuê</option>
-            <option value="dirty">Cần dọn</option>
-            <option value="cleaning">Đang dọn</option>
-            <option value="maintenance">Bảo trì</option>
+            <option value="all">All</option>
+            <option value="available">Vacant</option>
+            <option value="occupied">Occupied</option>
+            <option value="dirty">Needs cleaning</option>
+            <option value="cleaning">Cleaning</option>
+            <option value="maintenance">Maintenance</option>
           </select>
           <button
             className={`${buttonStyles.base} ${buttonStyles.secondary} ${buttonStyles.sm}`}
             onClick={refetch}
-            title="Làm mới dữ liệu"
+            title="Refresh data"
           >
             <RefreshCw size={16} />
           </button>
         </div>
       </div>
       {filteredRooms.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-          Không có phòng nào
+        <div className={styles.tableEmptySubtle}>
+          No rooms
         </div>
       ) : (
         <div className={`${styles.grid} ${styles.gridRooms}`}>
           {filteredRooms.map((room) => (
-            <div key={room._id} className={styles.gridItem} style={{ position: 'relative' }}>
+            <div key={room._id} className={styles.gridItem}>
               <RoomCard room={transformRoom(room)} />
               <button
-                className={`${buttonStyles.base} ${buttonStyles.secondary} ${buttonStyles.sm}`}
-                style={{
-                  position: 'absolute',
-                  top: '0.5rem',
-                  right: '0.5rem',
-                  padding: '0.25rem 0.5rem',
-                  background: 'white',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                }}
+                type="button"
+                className={`${buttonStyles.base} ${buttonStyles.secondary} ${buttonStyles.sm} ${styles.roomCardEditBtn}`}
                 onClick={() => handleOpenStatusModal(room)}
-                title="Cập nhật trạng thái"
+                title="Update status"
               >
                 <Edit size={14} />
               </button>
@@ -154,33 +142,32 @@ const RoomsTab = () => {
       {showStatusModal && selectedRoom && (
         <div className={styles.modalOverlay} onClick={() => setShowStatusModal(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h2>Cập nhật trạng thái - Phòng {selectedRoom.roomNumber}</h2>
-            <div style={{ marginTop: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-                Trạng thái hiện tại: <strong>{getStatusLabel(selectedRoom.status)}</strong>
-              </label>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-                Chọn trạng thái mới <span style={{ color: '#ef4444' }}>*</span>
-              </label>
-              <select
-                value={newStatus}
-                onChange={(e) => setNewStatus(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '0.5rem 0.75rem',
-                  borderRadius: '0.375rem',
-                  border: '1px solid #d1d5db',
-                  fontSize: '0.875rem'
-                }}
-              >
-                <option value="">Chọn trạng thái</option>
-                <option value="dirty">Cần dọn</option>
-                <option value="cleaning">Đang dọn</option>
-                <option value="maintenance">Bảo trì</option>
+            <h2 className={styles.modalFormTitle}>Update status — Room {selectedRoom.roomNumber}</h2>
+            <div className={`${styles.modalFormStack} ${styles.mtMd}`}>
+              <div>
+                <span className={styles.formLabel}>Current status: </span>
+                <strong>{getStatusLabel(selectedRoom.status)}</strong>
+              </div>
+              <div>
+                <label className={styles.formLabel} htmlFor="rooms-new-status">
+                  New status <span className={styles.reqStar}>*</span>
+                </label>
+                <select
+                  id="rooms-new-status"
+                  className={styles.formInputDark}
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value)}
+                >
+                <option value="">Select status</option>
+                <option value="dirty">Needs cleaning</option>
+                <option value="cleaning">Cleaning</option>
+                <option value="maintenance">Maintenance</option>
               </select>
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+            <div className={styles.modalFooterBar}>
               <button
+                type="button"
                 className={`${buttonStyles.secondary} ${buttonStyles.md}`}
                 onClick={() => {
                   setShowStatusModal(false);
@@ -188,13 +175,14 @@ const RoomsTab = () => {
                   setNewStatus('');
                 }}
               >
-                Hủy
+                Cancel
               </button>
               <button
+                type="button"
                 className={`${buttonStyles.primary} ${buttonStyles.md}`}
                 onClick={handleConfirmStatusUpdate}
               >
-                Cập nhật
+                Update
               </button>
             </div>
           </div>

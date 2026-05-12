@@ -1,16 +1,21 @@
 import { apiCall } from '../config/api';
 
 export const reportService = {
-  /** Xem nhanh — không lưu DB */
+  /** Preview — not persisted */
   getOccupancyReport: async (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     return apiCall(`/reports/occupancy${qs ? `?${qs}` : ''}`);
   },
 
-  /** Lưu báo cáo vào DB (dùng khi bấm "Tạo báo cáo" trên UI) */
+  /** Save report to DB (used when clicking Create report in the UI) */
   saveOccupancyReport: async (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return apiCall(`/reports/occupancy/save${qs ? `?${qs}` : ''}`, { method: 'POST' });
+    return apiCall('/reports/occupancy/save', {
+      method: 'POST',
+      body: JSON.stringify({
+        fromDate: params.fromDate,
+        toDate: params.toDate,
+      }),
+    });
   },
 
   getRevenueReport: async (params = {}) => {
@@ -19,8 +24,13 @@ export const reportService = {
   },
 
   saveRevenueReport: async (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    return apiCall(`/reports/revenue/save${qs ? `?${qs}` : ''}`, { method: 'POST' });
+    return apiCall('/reports/revenue/save', {
+      method: 'POST',
+      body: JSON.stringify({
+        fromDate: params.fromDate,
+        toDate: params.toDate,
+      }),
+    });
   },
 
   listReports: async (filters = {}) => {

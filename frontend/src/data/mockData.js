@@ -11,7 +11,7 @@ export const mockRooms = [
   ];
   
   export const maintenanceRequests = [
-    { id: 1, room: '201', issue: 'Điều hòa không hoạt động', priority: 'High', status: 'Pending' },
-    { id: 2, room: '105', issue: 'Vòi nước bị rò rỉ', priority: 'Medium', status: 'In Progress' },
-    { id: 3, room: '302', issue: 'Đèn hỏng', priority: 'Low', status: 'Pending' },
+    { id: 1, room: '201', issue: 'AC not working', priority: 'High', status: 'Pending' },
+    { id: 2, room: '105', issue: 'Leaking faucet', priority: 'Medium', status: 'In Progress' },
+    { id: 3, room: '302', issue: 'Broken light', priority: 'Low', status: 'Pending' },
   ];

@@ -12,16 +12,16 @@ const {
 } = require('../../controllers/guestController');
 const { protect, authorize } = require('../../middleware/authMiddleware');
 
-// Chỉ Lễ tân hoặc Quản lý
+// Receptionist or manager
 router.use(protect, authorize('receptionist', 'manager'));
 
 router.route('/')
     .get(getAllGuests)
     .post(createGuestRules, validate, createGuest);
 
-router.route('/:guestId') // Khớp với param 'guestId' trong Doc
+router.route('/:guestId')
     .get(getGuestById)
-    .put(updateGuestRules, validate, updateGuest) // Đổi sang PUT
+    .put(updateGuestRules, validate, updateGuest)
     .delete(authorize('manager'), deleteGuest);
 
 module.exports = router;

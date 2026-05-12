@@ -13,21 +13,21 @@ const {
 const mongoose = require('mongoose');
 
 /**
- * @desc    Tạo booking mới
+ * @desc    Create a new booking
  * @route   POST /api/bookings
  * @access  Private (Receptionist, Manager)
- * @remarks Phòng có thể ở available/dirty/cleaning (đặt trước); check-in chỉ khi phòng đã available.
+ * @remarks Room may be available/dirty/cleaning (advance booking); check-in only when room is available.
  */
 
 const createBooking = asyncHandler(async (req, res) => {
   const { 
-    customerId, // ID của Guest nếu đã tồn tại
-    guestInfo,  // Thông tin guest mới { fullName, phoneNumber, email }
+    customerId, // Existing guest ID
+    guestInfo,  // New guest { fullName, phoneNumber, email }
     roomId, 
     checkInDate, 
     checkOutDate, 
     numberOfGuests
-    // 'specialRequest' không có trong bookingModel
+    // 'specialRequest' is not in bookingModel
   } = req.body;
 
   const session = await mongoose.startSession();
@@ -40,7 +40,7 @@ const createBooking = asyncHandler(async (req, res) => {
         guest = await Guest.findById(customerId).session(session);
         if (!guest) {
           res.status(404);
-          throw new Error('Không tìm thấy Guest ID');
+          throw new Error('Guest ID not found');
         }
       } else if (guestInfo && guestInfo.fullName && guestInfo.phoneNumber) {
         guest = await Guest.findOne({ phoneNumber: guestInfo.phoneNumber }).session(session);
@@ -73,24 +73,24 @@ const createBooking = asyncHandler(async (req, res) => {
         }
       } else {
         res.status(400);
-        throw new Error('Cần thông tin customerId hoặc guestInfo');
+        throw new Error('Either customerId or guestInfo is required');
       }
 
       const room = await Room.findById(roomId).session(session);
       if (!room) {
         res.status(404);
-        throw new Error('Không tìm thấy phòng');
+        throw new Error('Room not found');
       }
       if (!BOOKABLE_ROOM_STATUSES.includes(room.status)) {
         res.status(400);
         throw new Error(
-          `Phòng đang ở trạng thái '${room.status}', không thể đặt (chỉ đặt được khi phòng available, dirty hoặc cleaning)`
+          `Room status is '${room.status}'; booking is only allowed when the room is available, dirty, or cleaning`
         );
       }
       const roomType = await RoomType.findById(room.roomType).session(session);
       if (!roomType) {
         res.status(404);
-        throw new Error('Không tìm thấy loại phòng liên kết');
+        throw new Error('Linked room type not found');
       }
 
       const conflict = await Booking.findOne(
@@ -98,7 +98,7 @@ const createBooking = asyncHandler(async (req, res) => {
       ).session(session);
       if (conflict) {
         res.status(400);
-        throw new Error('Phòng đã được đặt trong khoảng ngày này');
+        throw new Error('Room is already booked for these dates');
       }
 
       // Lock room row to avoid write-skew double-booking under concurrent requests.
@@ -113,13 +113,13 @@ const createBooking = asyncHandler(async (req, res) => {
       ).session(session);
       if (recheckConflict) {
         res.status(400);
-        throw new Error('Phòng đã được đặt trong khoảng ngày này');
+        throw new Error('Room is already booked for these dates');
       }
 
       const nights = Math.ceil((new Date(checkOutDate) - new Date(checkInDate)) / (1000 * 60 * 60 * 24));
       if (nights <= 0) {
         res.status(400);
-        throw new Error('Ngày check-out phải sau ngày check-in');
+        throw new Error('Check-out date must be after check-in date');
       }
       const totalPrice = roomType.basePrice * nights;
 
@@ -138,14 +138,14 @@ const createBooking = asyncHandler(async (req, res) => {
   } catch (error) {
     if (error?.errorLabels?.includes('TransientTransactionError')) {
       res.status(409);
-      throw new Error('Hệ thống đang xử lý đồng thời, vui lòng thử đặt lại.');
+      throw new Error('Concurrent update in progress. Please try booking again.');
     }
     throw error;
   } finally {
     session.endSession();
   }
   
-  // (Không cần cập nhật trạng thái phòng ngay, vì phòng vẫn 'available' cho đến khi check-in)
+  // Room status stays available until check-in
 
   const populatedBooking = await booking.populate([
       { path: 'guest' },
@@ -158,7 +158,7 @@ const createBooking = asyncHandler(async (req, res) => {
     emailResult = await sendBookingConfirmation(populatedBooking);
   } catch (mailErr) {
     console.error(
-      `[email] Gửi xác nhận đặt phòng thất bại, bookingId=${booking._id}:`,
+      `[email] Booking confirmation send failed, bookingId=${booking._id}:`,
       mailErr.message
     );
     emailResult = { sent: false, reason: 'email_send_failed', error: mailErr.message };
@@ -171,7 +171,7 @@ const createBooking = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Lấy tất cả booking (kèm filter)
+ * @desc    List all bookings (with filters)
  * @route   GET /api/bookings
  * @access  Private (Receptionist, Manager, Accountant)
  */
@@ -218,7 +218,7 @@ const getAllBookings = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Lấy booking theo ID
+ * @desc    Get booking by ID
  * @route   GET /api/bookings/:bookingId
  * @access  Private
  */
@@ -229,13 +229,13 @@ const getBookingById = asyncHandler(async (req, res) => {
     .populate('createdBy', 'name role');
   if (!booking) {
     res.status(404);
-    throw new Error('Không tìm thấy booking');
+    throw new Error('Booking not found');
   }
   res.json(booking);
 });
 
 /**
- * @desc    Cập nhật chi tiết booking
+ * @desc    Update booking details
  * @route   PUT /api/bookings/:bookingId
  * @access  Private (Receptionist)
  */
@@ -244,7 +244,7 @@ const updateBooking = asyncHandler(async (req, res) => {
   const booking = await Booking.findById(req.params.bookingId);
   if (!booking) {
     res.status(404);
-    throw new Error('Không tìm thấy booking');
+    throw new Error('Booking not found');
   }
 
   const targetRoomId = roomId ? String(roomId) : String(booking.room);
@@ -263,13 +263,13 @@ const updateBooking = asyncHandler(async (req, res) => {
       const txBooking = await Booking.findById(req.params.bookingId).session(session);
       if (!txBooking) {
         res.status(404);
-        throw new Error('Không tìm thấy booking');
+        throw new Error('Booking not found');
       }
 
       if (roomOrDatesChanged) {
         if (txBooking.status === 'checked_in' || txBooking.status === 'checked_out') {
           res.status(400);
-          throw new Error('Không thể đổi phòng hoặc ngày khi booking đã check-in hoặc check-out');
+          throw new Error('Cannot change room or dates after check-in or check-out');
         }
 
         const nights = Math.ceil(
@@ -277,7 +277,7 @@ const updateBooking = asyncHandler(async (req, res) => {
         );
         if (nights <= 0) {
           res.status(400);
-          throw new Error('Ngày check-out phải sau ngày check-in');
+          throw new Error('Check-out date must be after check-in date');
         }
 
         const conflict = await Booking.findOne(
@@ -290,7 +290,7 @@ const updateBooking = asyncHandler(async (req, res) => {
         ).session(session);
         if (conflict) {
           res.status(400);
-          throw new Error('Phòng đã được đặt trong khoảng ngày này');
+          throw new Error('Room is already booked for these dates');
         }
 
         await Room.updateOne(
@@ -309,25 +309,25 @@ const updateBooking = asyncHandler(async (req, res) => {
         ).session(session);
         if (recheckConflict) {
           res.status(400);
-          throw new Error('Phòng đã được đặt trong khoảng ngày này');
+          throw new Error('Room is already booked for these dates');
         }
 
         const room = await Room.findById(targetRoomId).session(session);
         if (!room) {
           res.status(404);
-          throw new Error('Không tìm thấy phòng');
+          throw new Error('Room not found');
         }
         const movingToAnotherRoom = String(txBooking.room) !== String(targetRoomId);
         if (movingToAnotherRoom && !BOOKABLE_ROOM_STATUSES.includes(room.status)) {
           res.status(400);
           throw new Error(
-            `Phòng đích đang ở trạng thái '${room.status}', không thể chuyển booking sang phòng này (chỉ chuyển được sang phòng available, dirty hoặc cleaning)`
+            `Target room status is '${room.status}'; booking can only be moved to a room that is available, dirty, or cleaning`
           );
         }
         const roomType = await RoomType.findById(room.roomType).session(session);
         if (!roomType) {
           res.status(404);
-          throw new Error('Không tìm thấy loại phòng liên kết');
+          throw new Error('Linked room type not found');
         }
 
         txBooking.room = targetRoomId;
@@ -341,7 +341,7 @@ const updateBooking = asyncHandler(async (req, res) => {
       }
       updated = await txBooking.save({ session });
 
-      // Đồng bộ hóa đơn chờ thanh toán với tổng tiền booking (tránh lệch sau đổi phòng/ngày)
+      // Sync pending invoice total with booking after room/date change
       await Invoice.updateOne(
         { booking: txBooking._id, paymentStatus: 'pending' },
         { $set: { totalAmount: txBooking.totalPrice } },
@@ -351,7 +351,7 @@ const updateBooking = asyncHandler(async (req, res) => {
   } catch (error) {
     if (error?.errorLabels?.includes('TransientTransactionError')) {
       res.status(409);
-      throw new Error('Hệ thống đang xử lý đồng thời, vui lòng thử lại.');
+      throw new Error('Concurrent update in progress. Please try again.');
     }
     throw error;
   } finally {
@@ -367,7 +367,7 @@ const updateBooking = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Hủy booking
+ * @desc    Cancel booking
  * @route   POST /api/bookings/:bookingId/cancel
  * @access  Private (Receptionist)
  */
@@ -375,16 +375,28 @@ const cancelBooking = asyncHandler(async (req, res) => {
   const booking = await Booking.findById(req.params.bookingId);
   if (!booking) {
     res.status(404);
-    throw new Error('Không tìm thấy booking');
+    throw new Error('Booking not found');
+  }
+  if (booking.status === 'cancelled') {
+    return res.json(booking);
   }
   if (booking.status === 'checked_in' || booking.status === 'checked_out') {
     res.status(400);
-    throw new Error('Không thể hủy booking đã check-in hoặc check-out');
+    throw new Error('Cannot cancel a booking that has checked in or out');
+  }
+
+  const invoice = await Invoice.findOne({ booking: booking._id });
+  if (invoice && invoice.paymentStatus === 'paid') {
+    res.status(400);
+    throw new Error('Cannot cancel: invoice is already paid');
+  }
+  if (invoice && invoice.paymentStatus === 'pending') {
+    invoice.paymentStatus = 'cancelled';
+    await invoice.save();
   }
 
   booking.status = 'cancelled';
-  // (Không cần cập nhật trạng thái phòng, vì nó chưa bao giờ bị set 'occupied')
-  
+
   const updated = await booking.save();
   res.json(updated);
 });

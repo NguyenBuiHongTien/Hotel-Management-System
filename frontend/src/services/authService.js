@@ -41,12 +41,12 @@ export const authService = {
           email: response.email,
           role: normalizeRole(response.role),
         },
-        message: 'Đăng nhập thành công',
+        message: 'Signed in successfully',
       };
     } catch (error) {
       return {
         success: false,
-        message: error.message || 'Tên đăng nhập hoặc mật khẩu không đúng',
+        message: error.message || 'Invalid email or password',
       };
     }
   },

@@ -4,18 +4,16 @@ const { startOfDay, endOfDay } = require('../utils/dateRange');
 const { sendPaymentSuccessEmail } = require('./notificationController');
 
 /**
- * @desc    Ghi nhận thanh toán
+ * @desc    Record payment
  * @route   POST /api/payments
  * @access  Private (Accountant, Receptionist)
  */
 const recordPayment = asyncHandler(async (req, res, next) => {
-  // Ưu tiên các trường trong invoiceModel
   const { invoiceId, paymentMethod } = req.body;
-  // 'amount' và 'paymentDate' không có trong invoiceModel
 
   if (!invoiceId || !paymentMethod) {
       res.status(400);
-      throw new Error('invoiceId và paymentMethod là bắt buộc');
+      throw new Error('invoiceId and paymentMethod are required');
   }
 
   const invoice = await Invoice.findOneAndUpdate(
@@ -32,12 +30,12 @@ const recordPayment = asyncHandler(async (req, res, next) => {
   if (!invoice) {
     const existing = await Invoice.findById(invoiceId).select('_id paymentStatus');
     if (!existing) {
-      return res.status(404).json({ message: 'Không tìm thấy hóa đơn' });
+      return res.status(404).json({ message: 'Invoice not found' });
     }
     if (existing.paymentStatus === 'cancelled') {
-      return res.status(400).json({ message: 'Không thể thanh toán hóa đơn đã hủy' });
+      return res.status(400).json({ message: 'Cannot pay a cancelled invoice' });
     }
-    return res.status(400).json({ message: 'Hóa đơn này đã được thanh toán' });
+    return res.status(400).json({ message: 'This invoice has already been paid' });
   }
 
   let emailResult = { sent: false, reason: 'skipped' };
@@ -55,7 +53,7 @@ const recordPayment = asyncHandler(async (req, res, next) => {
       emailResult = { sent: false, reason: 'invoice_not_found_after_payment' };
     }
   } catch (mailErr) {
-    console.error(`[email] Gửi thanh toán thất bại, invoiceId=${invoice._id}:`, mailErr.message);
+    console.error(`[email] Payment confirmation send failed, invoiceId=${invoice._id}:`, mailErr.message);
     emailResult = { sent: false, reason: 'email_send_failed', error: mailErr.message };
   }
 
@@ -66,7 +64,7 @@ const recordPayment = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * @desc    Xem lịch sử giao dịch (Hóa đơn đã thanh toán)
+ * @desc    Transaction history (paid invoices)
  * @route   GET /api/transactions
  * @access  Private (Accountant, Manager)
  */

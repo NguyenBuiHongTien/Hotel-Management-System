@@ -1,26 +1,43 @@
 .card {
-    background: white;
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    padding: 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  
-  .info {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .title {
-    font-size: 0.875rem;
-    color: #6b7280;
-  }
-  
-  .value {
-    font-size: 1.875rem;
-    font-weight: 700;
-    color: #1f2937;
-    margin-top: 0.5rem;
-  }
+  background: linear-gradient(165deg, #161512 0%, #121210 100%);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  padding: 1.35rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(250, 246, 236, 0.5);
+}
+
+.value {
+  font-size: 1.65rem;
+  font-weight: 700;
+  margin-top: 0.35rem;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(180deg, #fff8e7 0%, #e8c547 45%, #d4af37 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.15;
+}
+
+.icon {
+  flex-shrink: 0;
+  color: rgba(212, 175, 55, 0.55);
+  opacity: 0.95;
+}

@@ -32,7 +32,7 @@ describe('reportController date range validation', () => {
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(next).toHaveBeenCalled();
-    expect(String(next.mock.calls[0][0].message)).toContain('không đúng định dạng');
+    expect(String(next.mock.calls[0][0].message)).toContain('not a valid date');
     expect(Invoice.aggregate).not.toHaveBeenCalled();
   });
 
@@ -45,7 +45,7 @@ describe('reportController date range validation', () => {
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(next).toHaveBeenCalled();
-    expect(String(next.mock.calls[0][0].message)).toContain('nhỏ hơn hoặc bằng');
+    expect(String(next.mock.calls[0][0].message)).toContain('on or before');
     expect(Room.countDocuments).not.toHaveBeenCalled();
     expect(Booking.countDocuments).not.toHaveBeenCalled();
   });

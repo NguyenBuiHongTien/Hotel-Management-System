@@ -9,6 +9,7 @@ import invoiceService from '../services/invoiceService';
 import TransactionsTab from '../components/accountant/TransactionsTab';
 import ReportsTab from '../components/manager/ReportsTab';
 import InvoiceDetailModal from '../components/accountant/InvoiceDetailModal';
+import { asArray } from '../utils/apiNormalize';
 
 const AccountantDashboard = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState('invoices');
@@ -21,10 +22,10 @@ const AccountantDashboard = ({ onLogout }) => {
     try {
       setLoading(true);
       const data = await invoiceService.getAllInvoices();
-      setInvoices(Array.isArray(data) ? data : (data.data || []));
+      setInvoices(asArray(data, 'invoices'));
     } catch (err) {
       console.error('Failed to load invoices', err);
-      alert('Không thể tải hóa đơn.');
+      alert('Could not load invoices.');
     } finally {
       setLoading(false);
     }
@@ -49,14 +50,14 @@ const AccountantDashboard = ({ onLogout }) => {
 
   return (
     <div className={styles.container}>
-      <NavBar title="Kế toán" icon={DollarSign} onLogout={onLogout} />
+      <NavBar title="Accounting" icon={DollarSign} onLogout={onLogout} />
       <div className={styles.content}>
         {/* Tabs */}
         <div className={styles.tabNav}>
           {[
-            { id: 'invoices', label: 'Hóa đơn', icon: FileText },
-            { id: 'transactions', label: 'Giao dịch', icon: History },
-            { id: 'reports', label: 'Báo cáo', icon: TrendingUp },
+            { id: 'invoices', label: 'Invoices', icon: FileText },
+            { id: 'transactions', label: 'Transactions', icon: History },
+            { id: 'reports', label: 'Reports', icon: TrendingUp },
           ].map(tab => {
             const Icon = tab.icon;
             return (
@@ -76,38 +77,38 @@ const AccountantDashboard = ({ onLogout }) => {
         <div className={styles.tabContent}>
           {activeTab === 'invoices' && (
             <>
-              <div className={`${styles.grid} ${styles.grid3}`} style={{ marginBottom: '1.5rem' }}>
-                <StatCard title="Doanh thu hôm nay" value={`₫${totalToday.toLocaleString()}`} icon={DollarSign} iconColor="text-green-600" />
-                <StatCard title="Doanh thu (tổng)" value={`₫${totalMonth.toLocaleString()}`} icon={FileText} iconColor="text-blue-600" />
-                <StatCard title="Hóa đơn chưa thanh toán" value={String(unpaidCount)} icon={CreditCard} iconColor="text-red-600" />
+              <div className={`${styles.grid} ${styles.grid3} ${styles.mbLg}`}>
+                <StatCard title="Revenue today" value={`₫${totalToday.toLocaleString('en-US')}`} icon={DollarSign} />
+                <StatCard title="Revenue (total)" value={`₫${totalMonth.toLocaleString('en-US')}`} icon={FileText} />
+                <StatCard title="Unpaid invoices" value={String(unpaidCount)} icon={CreditCard} />
               </div>
 
-              <div style={{ marginTop: '2rem' }}>
-                <h2 className={styles.sectionTitle}>Hóa đơn gần đây</h2>
+              <div className={styles.mtXl}>
+                <h2 className={styles.sectionTitle}>Recent invoices</h2>
                 <div className={tableStyles.tableContainer}>
                   <table className={tableStyles.table}>
                     <thead>
                       <tr>
-                        <th className={tableStyles.th}>Mã HĐ</th>
-                        <th className={tableStyles.th}>Khách hàng</th>
-                        <th className={tableStyles.th}>Ngày lập</th>
-                        <th className={tableStyles.th}>Tổng tiền</th>
-                        <th className={tableStyles.th}>Trạng thái</th>
-                        <th className={tableStyles.th}>Thao tác</th>
+                        <th className={tableStyles.th}>Invoice #</th>
+                        <th className={tableStyles.th}>Guest</th>
+                        <th className={tableStyles.th}>Issue date</th>
+                        <th className={tableStyles.th}>Amount</th>
+                        <th className={tableStyles.th}>Status</th>
+                        <th className={tableStyles.th}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {loading ? (
-                        <tr><td className={tableStyles.td} colSpan={6}>Đang tải...</td></tr>
+                        <tr><td className={tableStyles.td} colSpan={6}>Loading...</td></tr>
                       ) : invoices.length === 0 ? (
-                        <tr><td className={tableStyles.td} colSpan={6}>Không có hóa đơn</td></tr>
+                        <tr><td className={tableStyles.td} colSpan={6}>No invoices</td></tr>
                       ) : (
                         invoices.slice(0, 20).map(inv => (
                           <tr key={inv._id}>
                             <td className={tableStyles.td}>#{inv._id?.slice(-6)}</td>
-                            <td className={tableStyles.td}>{inv.booking?.guest?.fullName || inv.booking?.guest?.name || (inv.booking?.guest?.fullName) || 'Khách'}</td>
-                            <td className={tableStyles.td}>{new Date(inv.issueDate || inv.createdAt).toLocaleDateString()}</td>
-                            <td className={tableStyles.td}>₫{Number(inv.totalAmount || 0).toLocaleString()}</td>
+                            <td className={tableStyles.td}>{inv.booking?.guest?.fullName || inv.booking?.guest?.name || 'Guest'}</td>
+                            <td className={tableStyles.td}>{new Date(inv.issueDate || inv.createdAt).toLocaleDateString('en-US')}</td>
+                            <td className={tableStyles.td}>₫{Number(inv.totalAmount || 0).toLocaleString('en-US')}</td>
                             <td className={tableStyles.td}>
                               <span className={`${badgeStyles.badge} ${(inv.paymentStatus || '').toLowerCase() === 'paid' ? badgeStyles.success : ''}`}>{inv.paymentStatus || 'pending'}</span>
                             </td>
@@ -118,7 +119,7 @@ const AccountantDashboard = ({ onLogout }) => {
                                   setSelectedInvoiceId(inv._id);
                                   setShowInvoiceModal(true);
                                 }}
-                                title="Xem chi tiết"
+                                title="View details"
                               >
                                 <Eye size={18} />
                               </button>

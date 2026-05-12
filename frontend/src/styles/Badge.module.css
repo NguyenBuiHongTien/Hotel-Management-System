@@ -1,36 +1,55 @@
 .badge {
-  padding: 0.25rem 0.75rem;
+  padding: 0.28rem 0.75rem;
   border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  border: 1px solid transparent;
 }
 
 .info {
-  background: #dbeafe;
-  color: #4f46e5;
+  background: rgba(212, 175, 55, 0.15);
+  color: #e8c547;
+  border-color: rgba(212, 175, 55, 0.3);
 }
 
 .success {
-  background: #d1fae5;
-  color: #16a34a;
+  background: rgba(22, 101, 52, 0.35);
+  color: #bbf7d0;
+  border-color: rgba(74, 222, 128, 0.35);
 }
 
 .warning {
-  background: #fef3c7;
-  color: #d97706;
+  background: rgba(120, 53, 15, 0.4);
+  color: #fde68a;
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+.danger {
+  background: rgba(127, 29, 29, 0.45);
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.4);
 }
 
 .occupied {
-  background-color: red;
-  color: white;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
+  background: rgba(127, 29, 29, 0.4);
+  color: #fecaca;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
 }
+
 .vacant {
-  background-color: green;
-  color: white;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
+  background: rgba(22, 101, 52, 0.35);
+  color: #bbf7d0;
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
 }

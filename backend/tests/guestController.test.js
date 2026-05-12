@@ -59,6 +59,6 @@ describe('guestController.deleteGuest', () => {
     expect(next).not.toHaveBeenCalled();
     expect(deleteOne).toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith({ message: 'Đã xóa khách thành công' });
+    expect(res.json).toHaveBeenCalledWith({ message: 'Guest deleted successfully' });
   });
 });

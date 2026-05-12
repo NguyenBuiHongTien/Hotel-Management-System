@@ -1,7 +1,7 @@
 /**
- * Trùng lịch đặt phòng: khoảng [checkIn, checkOut) — hai booking chồng nhau khi
+ * Booking overlap: interval [checkIn, checkOut) — two bookings overlap when
  * booking.checkIn < rangeEnd && booking.checkOut > rangeStart.
- * Dùng chung cho tạo/cập nhật booking và tìm phòng trống để tránh lệch biên.
+ * Shared by create/update booking and available-room search to keep edge rules consistent.
  */
 
 const BOOKABLE_ROOM_STATUSES = ['available', 'dirty', 'cleaning'];
@@ -12,7 +12,7 @@ function toDate(value) {
 
 /**
  * @param {object} opts
- * @param {string|import('mongoose').Types.ObjectId} [opts.roomId] — bỏ qua nếu cần mọi phòng (vd. search)
+ * @param {string|import('mongoose').Types.ObjectId} [opts.roomId] — omit to match any room (e.g. search)
  * @param {Date|string|number} opts.checkInDate
  * @param {Date|string|number} opts.checkOutDate
  * @param {string|import('mongoose').Types.ObjectId} [opts.excludeBookingId]
@@ -23,19 +23,15 @@ function buildBookingOverlapFilter({
   checkOutDate,
   excludeBookingId,
 }) {
-  const checkIn = toDate(checkInDate);
-  const checkOut = toDate(checkOutDate);
+  const start = toDate(checkInDate);
+  const end = toDate(checkOutDate);
   const filter = {
     status: { $in: ['confirmed', 'checked_in'] },
-    checkInDate: { $lt: checkOut },
-    checkOutDate: { $gt: checkIn },
+    checkInDate: { $lt: end },
+    checkOutDate: { $gt: start },
   };
-  if (roomId != null && roomId !== '') {
-    filter.room = roomId;
-  }
-  if (excludeBookingId) {
-    filter._id = { $ne: excludeBookingId };
-  }
+  if (roomId) filter.room = roomId;
+  if (excludeBookingId) filter._id = { $ne: excludeBookingId };
   return filter;
 }
 

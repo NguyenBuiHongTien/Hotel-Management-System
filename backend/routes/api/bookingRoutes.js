@@ -11,7 +11,6 @@ const {
     updateBooking,
     cancelBooking
 } = require('../../controllers/bookingController');
-// Lấy hàm tạo hóa đơn
 const { generateInvoiceForBooking } = require('../../controllers/invoiceController');
 const { protect, authorize } = require('../../middleware/authMiddleware');
 
@@ -28,7 +27,6 @@ router.route('/:bookingId')
 
 router.post('/:bookingId/cancel', protect, authorize(...R_M), cancelBooking);
 
-// Route tạo hóa đơn (theo file Doc)
 router.post('/:bookingId/invoice', protect, authorize(...R_M_A), generateInvoiceForBooking);
 
 module.exports = router;

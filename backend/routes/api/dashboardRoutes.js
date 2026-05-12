@@ -6,7 +6,7 @@ const {
 } = require('../../controllers/dashboardController');
 const { protect, authorize } = require('../../middleware/authMiddleware');
 
-// Chỉ Quản lý
+// Manager only
 router.use(protect, authorize('manager'));
 
 router.get('/revenue', getRevenueDashboard);

@@ -1,8 +1,22 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  LayoutDashboard,
+  Users,
+} from 'lucide-react';
 import { authService } from '../services/authService';
 import styles from '../styles/Login.module.css';
+
+const HTMonogram = ({ size = 'md' }) => (
+  <div className={size === 'lg' ? styles.logoLg : styles.logoSm} aria-hidden>
+    <span className={styles.logoHt}>HT</span>
+  </div>
+);
 
 const Login = ({ onLogin }) => {
   const [email, setEmail] = useState('');
@@ -27,74 +41,119 @@ const Login = ({ onLogin }) => {
         setError(result.message);
       }
     } catch (err) {
-      setError(err.message || 'Đã xảy ra lỗi khi đăng nhập');
+      setError(err.message || 'An error occurred while signing in');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.card}>
-        <div className={styles.header}>
-          <div className={styles.logo}>
-            <Home size={32} />
+    <div className={styles.page}>
+      <div className={styles.ambient} aria-hidden />
+
+      <div className={styles.shell}>
+        <aside className={styles.aside}>
+          <div className={styles.asideInner}>
+            <HTMonogram size="lg" />
+            <p className={styles.asideEyebrow}>Operations in sync</p>
+            <h2 className={styles.asideHeadline}>Centralized operations</h2>
+            <p className={styles.asideLead}>
+              Bookings, guests, invoices, and reports — one platform for the whole property.
+            </p>
+            <div className={styles.asideRule} aria-hidden />
+            <ul className={styles.asideFeatures}>
+              <li>
+                <ShieldCheck size={17} strokeWidth={1.5} aria-hidden />
+                <span>JWT & role-based access</span>
+              </li>
+              <li>
+                <LayoutDashboard size={17} strokeWidth={1.5} aria-hidden />
+                <span>Role-specific dashboards</span>
+              </li>
+              <li>
+                <Users size={17} strokeWidth={1.5} aria-hidden />
+                <span>Bookings, guests &amp; finance</span>
+              </li>
+            </ul>
           </div>
-          <h1 className={styles.title}>HotelMaster</h1>
-          <p className={styles.subtitle}>Hotel Management System</p>
-        </div>
+        </aside>
 
-        <form onSubmit={handleSubmit} className={styles.form}>
-          {error && <div className={styles.error}>{error}</div>}
+        <main className={styles.main}>
+          <div className={styles.card}>
+            <header className={styles.cardHeader}>
+              <div className={styles.brandRow}>
+                <HTMonogram size="md" />
+                <div className={styles.brandText}>
+                  <p className={styles.kicker}>Staff sign-in</p>
+                  <h1 className={styles.title}>HotelMaster</h1>
+                </div>
+              </div>
+              <p className={styles.subtitle}>
+                Enter your credentials to access the internal console.
+              </p>
+            </header>
 
-          {/* Email Input */}
-          <div>
-            <label className={styles.label}>Email</label>
-            <div className={styles.inputWrapper}>
-              <Mail className={styles.icon} />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={styles.input}
-                placeholder="Nhập email"
-                required
-                autoComplete="email"
-              />
-            </div>
-          </div>
+            <form onSubmit={handleSubmit} className={styles.form} noValidate>
+              {error && (
+                <div className={styles.error} role="alert">
+                  {error}
+                </div>
+              )}
 
-          {/* Password Input with Toggle */}
-          <div>
-            <label className={styles.label}>Mật khẩu</label>
-            <div className={styles.inputWrapper}>
-              <Lock className={styles.icon} />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={styles.input}
-                placeholder="Nhập mật khẩu"
-                required
-                autoComplete="current-password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className={styles.eyeButton}
-                tabIndex="-1"
-                aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-              >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              <div className={styles.field}>
+                <label htmlFor="login-email" className={styles.label}>
+                  Email
+                </label>
+                <div className={styles.inputWrapper}>
+                  <Mail className={styles.inputIcon} aria-hidden />
+                  <input
+                    id="login-email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className={styles.input}
+                    placeholder="ten@hotel.com"
+                    required
+                    autoComplete="email"
+                  />
+                </div>
+              </div>
+
+              <div className={styles.field}>
+                <label htmlFor="login-password" className={styles.label}>
+                  Password
+                </label>
+                <div className={styles.inputWrapper}>
+                  <Lock className={styles.inputIcon} aria-hidden />
+                  <input
+                    id="login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className={styles.input}
+                    placeholder="••••••••"
+                    required
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className={styles.eyeButton}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+              </div>
+
+              <button type="submit" className={styles.submit} disabled={isLoading}>
+                {isLoading ? 'Signing in…' : 'Sign in'}
               </button>
-            </div>
+            </form>
+
+            <p className={styles.hint}>Authorized staff only. After seeding users, default password is <code>HotelDemo1</code>.</p>
           </div>
-
-          <button type="submit" className={styles.button} disabled={isLoading}>
-            {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
-          </button>
-
-        </form>
+        </main>
       </div>
     </div>
   );

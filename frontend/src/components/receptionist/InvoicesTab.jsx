@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback} from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Eye } from 'lucide-react';
 import { invoiceService } from '../../services/invoiceService';
+import { asArray } from '../../utils/apiNormalize';
 import styles from '../../styles/Dashboard.module.css';
 import tableStyles from '../../styles/Table.module.css';
 import badgeStyles from '../../styles/Badge.module.css';
@@ -16,18 +17,20 @@ const InvoicesTab = () => {
   });
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const fetchIdRef = useRef(0);
 
   const normalizePaymentStatus = (status) =>
     (status || '').toString().trim().toLowerCase();
 
   const paymentStatusLabel = (status) => {
     const s = normalizePaymentStatus(status);
-    if (s === 'paid') return 'Đã thanh toán';
-    if (s === 'cancelled') return 'Đã hủy';
-    return 'Chưa thanh toán';
+    if (s === 'paid') return 'Paid';
+    if (s === 'cancelled') return 'Cancelled';
+    return 'Unpaid';
   };
 
   const loadInvoices = useCallback(async () => {
+    const myId = ++fetchIdRef.current;
     try {
       setLoading(true);
 
@@ -37,12 +40,16 @@ const InvoicesTab = () => {
       if (filters.toDate) filterParams.toDate = filters.toDate;
 
       const data = await invoiceService.getAllInvoices(filterParams);
-      setInvoices(Array.isArray(data) ? data : (data.data || []));
+      if (myId !== fetchIdRef.current) return;
+      setInvoices(asArray(data, 'invoices'));
     } catch (err) {
+      if (myId !== fetchIdRef.current) return;
       console.error('Error loading invoices:', err);
-      alert('Không thể tải danh sách hóa đơn');
+      alert('Could not load invoices');
     } finally {
-      setLoading(false);
+      if (myId === fetchIdRef.current) {
+        setLoading(false);
+      }
     }
   }, [filters]);
 
@@ -56,112 +63,90 @@ const InvoicesTab = () => {
       setSelectedInvoice(data);
       setShowDetailModal(true);
     } catch (err) {
-      alert('Không thể tải chi tiết hóa đơn');
+      alert('Could not load invoice details');
     }
   };
 
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h2 className={styles.sectionTitle}>Quản lý hóa đơn</h2>
+      <div className={styles.flexBetween}>
+        <h2 className={styles.sectionTitle}>Invoices</h2>
       </div>
 
-      {/* Filters */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-        gap: '1rem', 
-        marginBottom: '1.5rem',
-        background: 'white',
-        padding: '1rem',
-        borderRadius: '0.5rem',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-      }}>
+      <div className={styles.filterBar}>
         <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-            Trạng thái
-          </label>
+          <label htmlFor="inv-filter-status">Status</label>
           <select
+            id="inv-filter-status"
+            className={styles.formInputDark}
             value={filters.status}
-            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-            style={{
-              width: '100%',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '0.375rem',
-              border: '1px solid #d1d5db',
-              fontSize: '0.875rem'
-            }}
+            onChange={(e) => setFilters((prev) => ({ ...prev, status: e.target.value }))}
           >
-            <option value="">Tất cả</option>
-            <option value="pending">Chưa thanh toán</option>
-            <option value="paid">Đã thanh toán</option>
-            <option value="cancelled">Đã hủy</option>
+            <option value="">All</option>
+            <option value="pending">Unpaid</option>
+            <option value="paid">Paid</option>
+            <option value="cancelled">Cancelled</option>
           </select>
         </div>
         <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-            Từ ngày
-          </label>
+          <label htmlFor="inv-from">From</label>
           <input
+            id="inv-from"
             type="date"
+            className={styles.formInputDark}
             value={filters.fromDate}
-            onChange={(e) => setFilters({ ...filters, fromDate: e.target.value })}
-            style={{
-              width: '100%',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '0.375rem',
-              border: '1px solid #d1d5db',
-              fontSize: '0.875rem'
-            }}
+            max={filters.toDate || undefined}
+            onChange={(e) =>
+              setFilters((prev) => {
+                const fromDate = e.target.value;
+                const toDate =
+                  prev.toDate && fromDate && prev.toDate < fromDate ? fromDate : prev.toDate;
+                return { ...prev, fromDate, toDate };
+              })
+            }
           />
         </div>
         <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-            Đến ngày
-          </label>
+          <label htmlFor="inv-to">To</label>
           <input
+            id="inv-to"
             type="date"
+            className={styles.formInputDark}
             value={filters.toDate}
-            onChange={(e) => setFilters({ ...filters, toDate: e.target.value })}
-            style={{
-              width: '100%',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '0.375rem',
-              border: '1px solid #d1d5db',
-              fontSize: '0.875rem'
-            }}
+            min={filters.fromDate || undefined}
+            onChange={(e) => setFilters((prev) => ({ ...prev, toDate: e.target.value }))}
           />
         </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+        <div className={styles.filterBarActions}>
           <button
+            type="button"
             className={`${buttonStyles.secondary} ${buttonStyles.md}`}
             onClick={() => setFilters({ status: '', fromDate: '', toDate: '' })}
           >
-            Xóa bộ lọc
+            Clear filters
           </button>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className={`${styles.grid} ${styles.grid3}`} style={{ marginBottom: '1.5rem' }}>
-        <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Tổng hóa đơn</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1f2937' }}>{invoices.length}</div>
+      <div className={`${styles.grid} ${styles.grid3} ${styles.mbLg}`}>
+        <div className={styles.miniStatCard}>
+          <div className={styles.miniStatLabel}>Total invoices</div>
+          <div className={styles.miniStatValue}>{invoices.length}</div>
         </div>
-        <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Chưa thanh toán</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#ef4444' }}>
-          {invoices.filter(inv => normalizePaymentStatus(inv.paymentStatus) === 'pending').length}
+        <div className={styles.miniStatCard}>
+          <div className={styles.miniStatLabel}>Unpaid</div>
+          <div className={styles.miniStatValueDanger}>
+            {invoices.filter(inv => normalizePaymentStatus(inv.paymentStatus) === 'pending').length}
           </div>
         </div>
-        <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Tổng doanh thu</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#22c55e' }}>
+        <div className={styles.miniStatCard}>
+          <div className={styles.miniStatLabel}>Total revenue</div>
+          <div className={styles.miniStatValueGreen}>
             ₫{invoices
               .filter(inv => normalizePaymentStatus(inv.paymentStatus) === 'paid')
               .reduce((sum, inv) => sum + (inv.totalAmount || 0), 0)
-              .toLocaleString()}
+              .toLocaleString('en-US')}
           </div>
         </div>
       </div>
@@ -171,20 +156,20 @@ const InvoicesTab = () => {
         <table className={tableStyles.table}>
           <thead>
             <tr>
-              <th className={tableStyles.th}>Mã HĐ</th>
-              <th className={tableStyles.th}>Khách hàng</th>
-              <th className={tableStyles.th}>Phòng</th>
-              <th className={tableStyles.th}>Ngày lập</th>
-              <th className={tableStyles.th}>Tổng tiền</th>
-              <th className={tableStyles.th}>Trạng thái</th>
-              <th className={tableStyles.th}>Thao tác</th>
+              <th className={tableStyles.th}>Invoice #</th>
+              <th className={tableStyles.th}>Guest</th>
+              <th className={tableStyles.th}>Room</th>
+              <th className={tableStyles.th}>Issue date</th>
+              <th className={tableStyles.th}>Amount</th>
+              <th className={tableStyles.th}>Status</th>
+              <th className={tableStyles.th}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td className={tableStyles.td} colSpan={7}>Đang tải...</td></tr>
+              <tr><td className={tableStyles.td} colSpan={7}>Loading...</td></tr>
             ) : invoices.length === 0 ? (
-              <tr><td className={tableStyles.td} colSpan={7}>Không có hóa đơn nào</td></tr>
+              <tr><td className={tableStyles.td} colSpan={7}>No invoices</td></tr>
             ) : (
               invoices.map(inv => (
                 <tr key={inv._id}>
@@ -196,10 +181,10 @@ const InvoicesTab = () => {
                     {inv.booking?.room?.roomNumber || inv.booking?.room || 'N/A'}
                   </td>
                   <td className={tableStyles.td}>
-                    {new Date(inv.issueDate || inv.createdAt).toLocaleDateString('vi-VN')}
+                    {new Date(inv.issueDate || inv.createdAt).toLocaleDateString('en-US')}
                   </td>
                   <td className={tableStyles.td}>
-                    ₫{Number(inv.totalAmount || 0).toLocaleString()}
+                    ₫{Number(inv.totalAmount || 0).toLocaleString('en-US')}
                   </td>
                   <td className={tableStyles.td}>
                     <span className={`${badgeStyles.badge} ${
@@ -214,7 +199,7 @@ const InvoicesTab = () => {
                     <button
                       className={tableStyles.actionBtn}
                       onClick={() => handleViewDetail(inv._id)}
-                      title="Xem chi tiết"
+                      title="View details"
                     >
                       <Eye size={16} />
                     </button>
@@ -229,42 +214,43 @@ const InvoicesTab = () => {
       {/* Detail Modal */}
       {showDetailModal && selectedInvoice && (
         <div className={styles.modalOverlay} onClick={() => setShowDetailModal(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
-            <h2>Chi tiết hóa đơn #{selectedInvoice.invoiceId || selectedInvoice._id?.slice(-6)}</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+          <div className={`${styles.modal} ${styles.modalMax600}`} onClick={(e) => e.stopPropagation()}>
+            <h2 className={styles.modalFormTitle}>Invoice #{selectedInvoice.invoiceId || selectedInvoice._id?.slice(-6)}</h2>
+            <div className={styles.modalFormStack}>
               <div>
-                <strong>Khách hàng:</strong> {selectedInvoice.booking?.guest?.fullName || 'N/A'}
+                <strong>Guest:</strong> {selectedInvoice.booking?.guest?.fullName || 'N/A'}
               </div>
               <div>
-                <strong>Phòng:</strong> {selectedInvoice.booking?.room?.roomNumber || selectedInvoice.booking?.room || 'N/A'}
+                <strong>Room:</strong> {selectedInvoice.booking?.room?.roomNumber || selectedInvoice.booking?.room || 'N/A'}
               </div>
               <div>
-                <strong>Check-in:</strong> {selectedInvoice.booking?.checkInDate ? new Date(selectedInvoice.booking.checkInDate).toLocaleDateString('vi-VN') : 'N/A'}
+                <strong>Check-in:</strong> {selectedInvoice.booking?.checkInDate ? new Date(selectedInvoice.booking.checkInDate).toLocaleDateString('en-US') : 'N/A'}
               </div>
               <div>
-                <strong>Check-out:</strong> {selectedInvoice.booking?.checkOutDate ? new Date(selectedInvoice.booking.checkOutDate).toLocaleDateString('vi-VN') : 'N/A'}
+                <strong>Check-out:</strong> {selectedInvoice.booking?.checkOutDate ? new Date(selectedInvoice.booking.checkOutDate).toLocaleDateString('en-US') : 'N/A'}
               </div>
               <div>
-                <strong>Tổng tiền:</strong> ₫{Number(selectedInvoice.totalAmount || 0).toLocaleString()}
+                <strong>Total:</strong> ₫{Number(selectedInvoice.totalAmount || 0).toLocaleString('en-US')}
               </div>
               <div>
-                <strong>Trạng thái:</strong> 
+                <strong>Status:</strong>
                 <span className={`${badgeStyles.badge} ${
                   (selectedInvoice.paymentStatus || '').toLowerCase() === 'paid' ? badgeStyles.success : ''
-                }`} style={{ marginLeft: '0.5rem' }}>
+                } ${styles.badgeSpacer}`}>
                   {paymentStatusLabel(selectedInvoice.paymentStatus)}
                 </span>
               </div>
               <div>
-                <strong>Ngày lập:</strong> {new Date(selectedInvoice.issueDate || selectedInvoice.createdAt).toLocaleDateString('vi-VN')}
+                <strong>Issue date:</strong> {new Date(selectedInvoice.issueDate || selectedInvoice.createdAt).toLocaleDateString('en-US')}
               </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+            <div className={styles.modalFooterBar}>
               <button
+                type="button"
                 className={`${buttonStyles.secondary} ${buttonStyles.md}`}
                 onClick={() => setShowDetailModal(false)}
               >
-                Đóng
+                Close
               </button>
             </div>
           </div>
@@ -275,4 +261,3 @@ const InvoicesTab = () => {
 };
 
 export default InvoicesTab;
-

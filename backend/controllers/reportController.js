@@ -8,7 +8,7 @@ const { parseInclusiveRange } = require('../utils/dateRange');
 function validateDateRangeOrThrow(fromDate, toDate, res) {
   if (!fromDate || !toDate) {
     res.status(400);
-    throw new Error('Cần có fromDate và toDate');
+    throw new Error('fromDate and toDate are required');
   }
 
   const from = new Date(fromDate);
@@ -16,17 +16,17 @@ function validateDateRangeOrThrow(fromDate, toDate, res) {
 
   if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) {
     res.status(400);
-    throw new Error('fromDate hoặc toDate không đúng định dạng ngày');
+    throw new Error('fromDate or toDate is not a valid date');
   }
 
   if (from > to) {
     res.status(400);
-    throw new Error('fromDate phải nhỏ hơn hoặc bằng toDate');
+    throw new Error('fromDate must be on or before toDate');
   }
 }
 
 /**
- * Dữ liệu công suất theo khoảng thời gian: booking overlap với [from, to].
+ * Occupancy data for a period: bookings overlapping [from, to].
  */
 async function buildOccupancyPayload(fromDate, toDate) {
   const { from, to } = parseInclusiveRange(fromDate, toDate);
@@ -93,7 +93,7 @@ async function buildRevenuePayload(fromDate, toDate) {
 }
 
 /**
- * @desc    Xem nhanh báo cáo tỷ lệ lấp đầy (không lưu DB)
+ * @desc    Occupancy report preview (not saved)
  * @route   GET /api/reports/occupancy
  */
 const getOccupancyReportPreview = asyncHandler(async (req, res) => {
@@ -105,7 +105,7 @@ const getOccupancyReportPreview = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Tạo và lưu báo cáo tỷ lệ lấp đầy
+ * @desc    Create and save occupancy report
  * @route   POST /api/reports/occupancy/save
  */
 const saveOccupancyReport = asyncHandler(async (req, res) => {
@@ -117,7 +117,7 @@ const saveOccupancyReport = asyncHandler(async (req, res) => {
 
   const report = await Report.create({
     reportType: 'occupancy',
-    reportName: `Báo cáo Tỷ lệ lấp đầy ${fromDate} - ${toDate}`,
+    reportName: `Occupancy report ${fromDate} - ${toDate}`,
     startDate: fromDate,
     endDate: toDate,
     data,
@@ -128,7 +128,7 @@ const saveOccupancyReport = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Xem nhanh báo cáo doanh thu (không lưu DB)
+ * @desc    Revenue report preview (not saved)
  * @route   GET /api/reports/revenue
  */
 const getRevenueReportPreview = asyncHandler(async (req, res) => {
@@ -140,7 +140,7 @@ const getRevenueReportPreview = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Tạo và lưu báo cáo doanh thu
+ * @desc    Create and save revenue report
  * @route   POST /api/reports/revenue/save
  */
 const saveRevenueReport = asyncHandler(async (req, res) => {
@@ -152,7 +152,7 @@ const saveRevenueReport = asyncHandler(async (req, res) => {
 
   const report = await Report.create({
     reportType: 'revenue',
-    reportName: `Báo cáo Doanh thu ${fromDate} - ${toDate}`,
+    reportName: `Revenue report ${fromDate} - ${toDate}`,
     startDate: fromDate,
     endDate: toDate,
     data: {
@@ -166,7 +166,7 @@ const saveRevenueReport = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Lấy danh sách các báo cáo đã tạo
+ * @desc    List saved reports
  * @route   GET /api/reports
  */
 const listGeneratedReports = asyncHandler(async (req, res) => {
@@ -180,7 +180,7 @@ const listGeneratedReports = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Lấy chi tiết 1 báo cáo đã lưu
+ * @desc    Get saved report by ID
  * @route   GET /api/reports/:reportId
  */
 const getGeneratedReportById = asyncHandler(async (req, res) => {
@@ -190,13 +190,13 @@ const getGeneratedReportById = asyncHandler(async (req, res) => {
   );
   if (!report) {
     res.status(404);
-    throw new Error('Không tìm thấy báo cáo');
+    throw new Error('Report not found');
   }
   res.json(report);
 });
 
 /**
- * @desc    Xuất báo cáo tổng hợp (JSON)
+ * @desc    Export comprehensive report (JSON)
  * @route   GET /api/reports/comprehensive/export
  */
 const exportComprehensiveReport = asyncHandler(async (req, res) => {

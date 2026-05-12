@@ -3,16 +3,15 @@ import styles from '../styles/RoomCard.module.css';
 import badgeStyles from '../styles/Badge.module.css';
 
 const RoomCard = ({ room }) => {
-  if (!room) return null; // kiểm tra room trước khi render
+  if (!room) return null;
 
-  // Chọn class badge theo trạng thái
   let statusClass = '';
   switch (room.status) {
     case 'Available':
       statusClass = badgeStyles.success;
       break;
     case 'Occupied':
-      statusClass = badgeStyles.occupied; // màu đỏ
+      statusClass = badgeStyles.occupied;
       break;
     case 'Maintenance':
       statusClass = badgeStyles.warning;
@@ -25,19 +24,18 @@ const RoomCard = ({ room }) => {
     <div className={styles.card}>
       <div className={styles.header}>
         <div className={styles.roomInfo}>
-          <h3>Phòng {room.number}</h3>
-          <p>Tầng {room.floor} - {room.type}</p>
+          <h3>Room {room.number}</h3>
+          <p>Floor {room.floor} — {room.type}</p>
         </div>
       </div>
 
-      {/* Hàng trạng thái + giá */}
       <div className={styles.statusPriceRow}>
         <span className={`${badgeStyles.badge} ${statusClass}`}>
           {room.status}
         </span>
 
         <span className={styles.price}>
-          ${room.price}/đêm
+          ${room.price}/night
         </span>
       </div>
     </div>

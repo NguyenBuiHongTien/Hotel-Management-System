@@ -9,15 +9,14 @@ const {
 } = require('../../controllers/invoiceController');
 const { protect, authorize } = require('../../middleware/authMiddleware');
 
-// Kế toán, Lễ tân, Quản lý
+// Receptionist, manager, accountant
 const R_M_A = ['receptionist', 'manager', 'accountant'];
 router.use(protect, authorize(...R_M_A));
 
 router.route('/').get(getAllInvoices);
 
-// Routes xem theo Booking ID
 router.get('/guest/:bookingId', getGuestInvoiceView);
-router.get('/financial/:bookingId', authorize('accountant'), getFinancialInvoiceView); // View tài chính chỉ cho Kế toán
+router.get('/financial/:bookingId', authorize('accountant'), getFinancialInvoiceView);
 router.route('/:invoiceId').get(getInvoiceById);
 
 module.exports = router;

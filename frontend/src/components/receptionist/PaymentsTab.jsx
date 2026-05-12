@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CreditCard } from 'lucide-react';
 import { paymentService } from '../../services/paymentService';
 import { invoiceService } from '../../services/invoiceService';
+import { asArray } from '../../utils/apiNormalize';
 import styles from '../../styles/Dashboard.module.css';
 import tableStyles from '../../styles/Table.module.css';
 import badgeStyles from '../../styles/Badge.module.css';
@@ -20,9 +21,9 @@ const PaymentsTab = () => {
 
   const paymentStatusLabel = (status) => {
     const s = (status || '').toLowerCase();
-    if (s === 'paid') return 'Đã thanh toán';
-    if (s === 'cancelled') return 'Đã hủy';
-    return 'Chưa thanh toán';
+    if (s === 'paid') return 'Paid';
+    if (s === 'cancelled') return 'Cancelled';
+    return 'Unpaid';
   };
   useEffect(() => {
     loadPendingInvoices();
@@ -33,10 +34,10 @@ const PaymentsTab = () => {
     try {
       setLoading(true);
       const data = await invoiceService.getAllInvoices({ status: 'pending' });
-      setInvoices(Array.isArray(data) ? data : (data.data || []));
+      setInvoices(asArray(data, 'invoices'));
     } catch (err) {
       console.error('Error loading invoices:', err);
-      alert('Không thể tải danh sách hóa đơn');
+      alert('Could not load invoices');
     } finally {
       setLoading(false);
     }
@@ -45,7 +46,7 @@ const PaymentsTab = () => {
   const loadPaidInvoices = async () => {
     try {
       const data = await invoiceService.getAllInvoices({ status: 'paid' });
-      setPaidInvoices(Array.isArray(data) ? data : (data.data || []));
+      setPaidInvoices(asArray(data, 'invoices'));
     } catch (err) {
       console.error('Error loading paid invoices:', err);
     }
@@ -60,14 +61,14 @@ const PaymentsTab = () => {
         invoiceId: selectedInvoice._id,
         paymentMethod: paymentMethod
       });
-      alert('Ghi nhận thanh toán thành công!');
+      alert('Payment recorded successfully!');
       setPaymentMethod('cash');
       setShowPaymentModal(false);
       setSelectedInvoice(null);
       loadPendingInvoices();
       loadPaidInvoices();
     } catch (err) {
-      alert('Lỗi: ' + (err.message || 'Không thể ghi nhận thanh toán'));
+      alert('Error: ' + (err.message || 'Could not record payment'));
     } finally {
       setProcessing(false);
     }
@@ -75,20 +76,19 @@ const PaymentsTab = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h2 className={styles.sectionTitle}>Ghi nhận thanh toán</h2>
+      <div className={styles.flexBetween}>
+        <h2 className={styles.sectionTitle}>Record payment</h2>
       </div>
 
-      {/* Stats */}
-      <div className={`${styles.grid} ${styles.grid2}`} style={{ marginBottom: '1.5rem' }}>
-        <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Hóa đơn chưa thanh toán</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#ef4444' }}>{invoices.length}</div>
+      <div className={`${styles.grid} ${styles.grid2} ${styles.mbLg}`}>
+        <div className={styles.miniStatCard}>
+          <div className={styles.miniStatLabel}>Unpaid invoices</div>
+          <div className={styles.miniStatValueDanger}>{invoices.length}</div>
         </div>
-        <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Tổng tiền cần thu</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1f2937' }}>
-            ₫{invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0).toLocaleString()}
+        <div className={styles.miniStatCard}>
+          <div className={styles.miniStatLabel}>Amount due</div>
+          <div className={styles.miniStatValue}>
+            ₫{invoices.reduce((sum, inv) => sum + (inv.totalAmount || 0), 0).toLocaleString('en-US')}
           </div>
         </div>
       </div>
@@ -98,19 +98,19 @@ const PaymentsTab = () => {
         <table className={tableStyles.table}>
           <thead>
             <tr>
-              <th className={tableStyles.th}>Mã HĐ</th>
-              <th className={tableStyles.th}>Khách hàng</th>
-              <th className={tableStyles.th}>Phòng</th>
-              <th className={tableStyles.th}>Ngày lập</th>
-              <th className={tableStyles.th}>Tổng tiền</th>
-              <th className={tableStyles.th}>Thao tác</th>
+              <th className={tableStyles.th}>Invoice #</th>
+              <th className={tableStyles.th}>Guest</th>
+              <th className={tableStyles.th}>Room</th>
+              <th className={tableStyles.th}>Issue date</th>
+              <th className={tableStyles.th}>Amount</th>
+              <th className={tableStyles.th}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td className={tableStyles.td} colSpan={6}>Đang tải...</td></tr>
+              <tr><td className={tableStyles.td} colSpan={6}>Loading...</td></tr>
             ) : invoices.length === 0 ? (
-              <tr><td className={tableStyles.td} colSpan={6}>Không có hóa đơn nào chưa thanh toán</td></tr>
+              <tr><td className={tableStyles.td} colSpan={6}>No unpaid invoices</td></tr>
             ) : (
               invoices.map(inv => (
                 <tr key={inv._id}>
@@ -122,10 +122,10 @@ const PaymentsTab = () => {
                     {inv.booking?.room?.roomNumber || inv.booking?.room || 'N/A'}
                   </td>
                   <td className={tableStyles.td}>
-                    {new Date(inv.issueDate || inv.createdAt).toLocaleDateString('vi-VN')}
+                    {new Date(inv.issueDate || inv.createdAt).toLocaleDateString('en-US')}
                   </td>
                   <td className={tableStyles.td}>
-                    ₫{Number(inv.totalAmount || 0).toLocaleString()}
+                    ₫{Number(inv.totalAmount || 0).toLocaleString('en-US')}
                   </td>
                   <td className={tableStyles.td}>
                     <button
@@ -136,8 +136,8 @@ const PaymentsTab = () => {
                         setShowPaymentModal(true);
                       }}
                     >
-                      <CreditCard size={16} style={{ marginRight: '0.25rem' }} />
-                      Thanh toán
+                      <CreditCard size={16} aria-hidden />
+                      Pay
                     </button>
                   </td>
                 </tr>
@@ -147,27 +147,27 @@ const PaymentsTab = () => {
         </table>
       </div>
 
-      <div style={{ marginTop: '2.5rem' }}>
-        <h2 className={styles.sectionTitle} style={{ marginBottom: '1rem' }}>
-          Hóa đơn đã thanh toán
+      <div className={styles.sectionBlockLg}>
+        <h2 className={`${styles.sectionTitle} ${styles.sectionTitleMb}`}>
+          Paid invoices
         </h2>
         <div className={tableStyles.tableContainer}>
           <table className={tableStyles.table}>
             <thead>
               <tr>
-                <th className={tableStyles.th}>Mã HĐ</th>
-                <th className={tableStyles.th}>Khách hàng</th>
-                <th className={tableStyles.th}>Phòng</th>
-                <th className={tableStyles.th}>Ngày lập</th>
-                <th className={tableStyles.th}>Tổng tiền</th>
-                <th className={tableStyles.th}>Trạng thái</th>
+                <th className={tableStyles.th}>Invoice #</th>
+                <th className={tableStyles.th}>Guest</th>
+                <th className={tableStyles.th}>Room</th>
+                <th className={tableStyles.th}>Issue date</th>
+                <th className={tableStyles.th}>Amount</th>
+                <th className={tableStyles.th}>Status</th>
               </tr>
             </thead>
             <tbody>
               {paidInvoices.length === 0 ? (
                 <tr>
                   <td className={tableStyles.td} colSpan={6}>
-                    Chưa có hóa đơn đã thanh toán
+                    No paid invoices yet
                   </td>
                 </tr>
               ) : (
@@ -183,10 +183,10 @@ const PaymentsTab = () => {
                       {inv.booking?.room?.roomNumber || inv.booking?.room || 'N/A'}
                     </td>
                     <td className={tableStyles.td}>
-                      {new Date(inv.issueDate || inv.createdAt).toLocaleDateString('vi-VN')}
+                      {new Date(inv.issueDate || inv.createdAt).toLocaleDateString('en-US')}
                     </td>
                     <td className={tableStyles.td}>
-                      ₫{Number(inv.totalAmount || 0).toLocaleString()}
+                      ₫{Number(inv.totalAmount || 0).toLocaleString('en-US')}
                     </td>
                     <td className={tableStyles.td}>
                       <span
@@ -213,41 +213,36 @@ const PaymentsTab = () => {
             setPaymentMethod('cash');
           }}
         >
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-            <h2>Ghi nhận thanh toán</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h2 className={styles.modalFormTitle}>Record payment</h2>
+            <div className={styles.modalFormStack}>
               <div>
-                <strong>Mã HĐ:</strong> #{selectedInvoice.invoiceId || selectedInvoice._id?.slice(-6)}
+                <strong>Invoice #:</strong> #{selectedInvoice.invoiceId || selectedInvoice._id?.slice(-6)}
               </div>
               <div>
-                <strong>Khách hàng:</strong> {selectedInvoice.booking?.guest?.fullName || 'N/A'}
+                <strong>Guest:</strong> {selectedInvoice.booking?.guest?.fullName || 'N/A'}
               </div>
               <div>
-                <strong>Tổng tiền:</strong> ₫{Number(selectedInvoice.totalAmount || 0).toLocaleString()}
+                <strong>Total:</strong> ₫{Number(selectedInvoice.totalAmount || 0).toLocaleString('en-US')}
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-                  Phương thức thanh toán <span style={{ color: '#ef4444' }}>*</span>
+                <label className={styles.formLabel} htmlFor="pay-method">
+                  Payment method <span className={styles.reqStar}>*</span>
                 </label>
                 <select
+                  id="pay-method"
+                  className={styles.formInputDark}
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem 0.75rem',
-                    borderRadius: '0.375rem',
-                    border: '1px solid #d1d5db',
-                    fontSize: '0.875rem'
-                  }}
                 >
-                  <option value="cash">Tiền mặt</option>
-                  <option value="card">Thẻ</option>
-                  <option value="bank_transfer">Chuyển khoản</option>
+                  <option value="cash">Cash</option>
+                  <option value="card">Card</option>
+                  <option value="bank_transfer">Bank transfer</option>
                   <option value="online">Online</option>
                 </select>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+            <div className={styles.modalFooterBar}>
               <button
                 className={`${buttonStyles.secondary} ${buttonStyles.md}`}
                 onClick={() => {
@@ -257,14 +252,14 @@ const PaymentsTab = () => {
                 }}
                 disabled={processing}
               >
-                Hủy
+                Cancel
               </button>
               <button
                 className={`${buttonStyles.primary} ${buttonStyles.md}`}
                 onClick={handleRecordPayment}
                 disabled={processing}
               >
-                {processing ? 'Đang xử lý...' : 'Xác nhận thanh toán'}
+                {processing ? 'Processing...' : 'Confirm payment'}
               </button>
             </div>
           </div>
@@ -275,4 +270,3 @@ const PaymentsTab = () => {
 };
 
 export default PaymentsTab;
-

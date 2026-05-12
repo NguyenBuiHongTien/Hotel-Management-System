@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { paymentService } from '../../services/paymentService';
+import { asArray } from '../../utils/apiNormalize';
 import styles from '../../styles/Dashboard.module.css';
 import tableStyles from '../../styles/Table.module.css';
 import badgeStyles from '../../styles/Badge.module.css';
@@ -13,16 +14,11 @@ const TransactionsTab = () => {
     toDate: '',
     method: ''
   });
-  const inFlightRequestKeyRef = useRef(null);
+  const fetchIdRef = useRef(0);
 
   const loadTransactions = useCallback(async () => {
-    const requestKey = JSON.stringify(filters);
-    if (inFlightRequestKeyRef.current === requestKey) {
-      return;
-    }
-
+    const myId = ++fetchIdRef.current;
     try {
-      inFlightRequestKeyRef.current = requestKey;
       setLoading(true);
       const filterParams = {};
       if (filters.fromDate) filterParams.fromDate = filters.fromDate;
@@ -30,25 +26,25 @@ const TransactionsTab = () => {
       if (filters.method) filterParams.method = filters.method;
 
       const data = await paymentService.getTransactionHistory(filterParams);
-      
-      const transactionsList = Array.isArray(data) ? data : (data.data || []);
-      setTransactions(transactionsList);
+      if (myId !== fetchIdRef.current) return;
+      setTransactions(asArray(data, 'transactions'));
     } catch (err) {
-      const errorMessage = err.message || 'Không thể tải lịch sử giao dịch';
-      
-      // Hiển thị thông báo lỗi chi tiết hơn
+      if (myId !== fetchIdRef.current) return;
+      const errorMessage = err.message || 'Could not load transaction history';
+
       if (errorMessage.includes('403') || errorMessage.includes('not authorized')) {
-        alert(`Lỗi quyền truy cập: ${errorMessage}\n\nVui lòng đăng nhập lại với tài khoản accountant.`);
+        alert(`Access denied: ${errorMessage}\n\nPlease sign in again with an accountant account.`);
       } else if (errorMessage.includes('401') || errorMessage.includes('token')) {
-        alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+        alert('Your session has expired. Please sign in again.');
       } else {
-        alert(`Không thể tải lịch sử giao dịch: ${errorMessage}`);
+        alert(`Could not load transaction history: ${errorMessage}`);
       }
-      
-      setTransactions([]); // Set empty array on error
+
+      setTransactions([]);
     } finally {
-      inFlightRequestKeyRef.current = null;
-      setLoading(false);
+      if (myId === fetchIdRef.current) {
+        setLoading(false);
+      }
     }
   }, [filters]);
 
@@ -60,98 +56,74 @@ const TransactionsTab = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h2 className={styles.sectionTitle}>Lịch sử giao dịch</h2>
+      <div className={styles.flexBetween}>
+        <h2 className={styles.sectionTitle}>Transaction history</h2>
       </div>
 
-      {/* Filters */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-        gap: '1rem', 
-        marginBottom: '1.5rem',
-        background: 'white',
-        padding: '1rem',
-        borderRadius: '0.5rem',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-      }}>
+      <div className={styles.filterBar}>
         <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-            Từ ngày
-          </label>
+          <label htmlFor="tx-from">From</label>
           <input
+            id="tx-from"
             type="date"
+            className={styles.formInputDark}
             value={filters.fromDate}
-            onChange={(e) => setFilters({ ...filters, fromDate: e.target.value })}
-            style={{
-              width: '100%',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '0.375rem',
-              border: '1px solid #d1d5db',
-              fontSize: '0.875rem'
-            }}
+            max={filters.toDate || undefined}
+            onChange={(e) =>
+              setFilters((prev) => {
+                const fromDate = e.target.value;
+                const toDate =
+                  prev.toDate && fromDate && prev.toDate < fromDate ? fromDate : prev.toDate;
+                return { ...prev, fromDate, toDate };
+              })
+            }
           />
         </div>
         <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-            Đến ngày
-          </label>
+          <label htmlFor="tx-to">To</label>
           <input
+            id="tx-to"
             type="date"
+            className={styles.formInputDark}
             value={filters.toDate}
-            onChange={(e) => setFilters({ ...filters, toDate: e.target.value })}
-            style={{
-              width: '100%',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '0.375rem',
-              border: '1px solid #d1d5db',
-              fontSize: '0.875rem'
-            }}
+            min={filters.fromDate || undefined}
+            onChange={(e) => setFilters((prev) => ({ ...prev, toDate: e.target.value }))}
           />
         </div>
         <div>
-          <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-            Phương thức
-          </label>
+          <label htmlFor="tx-method">Method</label>
           <select
+            id="tx-method"
+            className={styles.formInputDark}
             value={filters.method}
-            onChange={(e) => setFilters({ ...filters, method: e.target.value })}
-            style={{
-              width: '100%',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '0.375rem',
-              border: '1px solid #d1d5db',
-              fontSize: '0.875rem'
-            }}
+            onChange={(e) => setFilters((prev) => ({ ...prev, method: e.target.value }))}
           >
-            <option value="">Tất cả</option>
-            <option value="cash">Tiền mặt</option>
-            <option value="card">Thẻ</option>
-            <option value="bank_transfer">Chuyển khoản</option>
+            <option value="">All</option>
+            <option value="cash">Cash</option>
+            <option value="card">Card</option>
+            <option value="bank_transfer">Bank transfer</option>
             <option value="online">Online</option>
           </select>
         </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+        <div className={styles.filterBarActions}>
           <button
+            type="button"
             className={`${buttonStyles.secondary} ${buttonStyles.md}`}
             onClick={() => setFilters({ fromDate: '', toDate: '', method: '' })}
           >
-            Xóa bộ lọc
+            Clear filters
           </button>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className={`${styles.grid} ${styles.grid2}`} style={{ marginBottom: '1.5rem' }}>
-        <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Tổng giao dịch</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#1f2937' }}>{transactions.length}</div>
+      <div className={`${styles.grid} ${styles.grid2} ${styles.mbLg}`}>
+        <div className={styles.statTile}>
+          <div className={styles.statTileLabel}>Transactions</div>
+          <div className={styles.statTileValue}>{transactions.length}</div>
         </div>
-        <div style={{ background: 'white', padding: '1rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>Tổng doanh thu</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#22c55e' }}>
-            ₫{totalRevenue.toLocaleString()}
-          </div>
+        <div className={styles.statTile}>
+          <div className={styles.statTileLabel}>Total revenue</div>
+          <div className={styles.statTileValueGreen}>₫{totalRevenue.toLocaleString('en-US')}</div>
         </div>
       </div>
 
@@ -160,18 +132,18 @@ const TransactionsTab = () => {
         <table className={tableStyles.table}>
           <thead>
             <tr>
-              <th className={tableStyles.th}>Mã HĐ</th>
-              <th className={tableStyles.th}>Khách hàng</th>
-              <th className={tableStyles.th}>Ngày thanh toán</th>
-              <th className={tableStyles.th}>Số tiền</th>
-              <th className={tableStyles.th}>Phương thức</th>
+              <th className={tableStyles.th}>Invoice #</th>
+              <th className={tableStyles.th}>Guest</th>
+              <th className={tableStyles.th}>Payment date</th>
+              <th className={tableStyles.th}>Amount</th>
+              <th className={tableStyles.th}>Method</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td className={tableStyles.td} colSpan={5}>Đang tải...</td></tr>
+              <tr><td className={tableStyles.td} colSpan={5}>Loading...</td></tr>
             ) : transactions.length === 0 ? (
-              <tr><td className={tableStyles.td} colSpan={5}>Không có giao dịch nào</td></tr>
+              <tr><td className={tableStyles.td} colSpan={5}>No transactions</td></tr>
             ) : (
               transactions.map(t => (
                 <tr key={t._id}>
@@ -180,16 +152,16 @@ const TransactionsTab = () => {
                     {t.booking?.guest?.fullName || 'N/A'}
                   </td>
                   <td className={tableStyles.td}>
-                    {new Date(t.updatedAt || t.createdAt).toLocaleDateString('vi-VN')}
+                    {new Date(t.updatedAt || t.createdAt).toLocaleDateString('en-US')}
                   </td>
                   <td className={tableStyles.td}>
-                    ₫{Number(t.totalAmount || 0).toLocaleString()}
+                    ₫{Number(t.totalAmount || 0).toLocaleString('en-US')}
                   </td>
                   <td className={tableStyles.td}>
                     <span className={`${badgeStyles.badge} ${badgeStyles.success}`}>
-                      {t.paymentMethod === 'cash' ? 'Tiền mặt' :
-                       t.paymentMethod === 'card' ? 'Thẻ' :
-                       t.paymentMethod === 'bank_transfer' ? 'Chuyển khoản' :
+                      {t.paymentMethod === 'cash' ? 'Cash' :
+                       t.paymentMethod === 'card' ? 'Card' :
+                       t.paymentMethod === 'bank_transfer' ? 'Bank transfer' :
                        t.paymentMethod === 'online' ? 'Online' : t.paymentMethod}
                     </span>
                   </td>
@@ -204,4 +176,3 @@ const TransactionsTab = () => {
 };
 
 export default TransactionsTab;
-

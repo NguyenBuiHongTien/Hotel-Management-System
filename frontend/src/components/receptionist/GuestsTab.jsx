@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit, Search, Trash2 } from 'lucide-react';
 import { guestService } from '../../services/guestService';
+import { asArray } from '../../utils/apiNormalize';
 import styles from '../../styles/Dashboard.module.css';
 import tableStyles from '../../styles/Table.module.css';
 import buttonStyles from '../../styles/Button.module.css';
@@ -31,10 +32,10 @@ const GuestsTab = () => {
         }
       }
       const data = await guestService.getAllGuests(filters);
-      setGuests(Array.isArray(data) ? data : (data.data || []));
+      setGuests(asArray(data, 'guests'));
     } catch (err) {
       console.error('Error loading guests:', err);
-      alert('Không thể tải danh sách khách hàng');
+      alert('Could not load guests');
     } finally {
       setLoading(false);
     }
@@ -56,17 +57,17 @@ const GuestsTab = () => {
     try {
       if (editingGuestId) {
         await guestService.updateGuest(editingGuestId, formData);
-        alert('Cập nhật khách hàng thành công!');
+        alert('Guest updated successfully!');
       } else {
         await guestService.createGuest(formData);
-        alert('Tạo khách hàng mới thành công!');
+        alert('Guest created successfully!');
       }
       setShowModal(false);
       setFormData({ fullName: '', phoneNumber: '', email: '', address: '' });
       setEditingGuestId(null);
       loadGuests();
     } catch (err) {
-      alert('Lỗi: ' + (err.message || 'Không thể lưu khách hàng'));
+      alert('Error: ' + (err.message || 'Could not save guest'));
     }
   };
 
@@ -82,24 +83,24 @@ const GuestsTab = () => {
   };
 
   const handleDelete = async (guest) => {
-    const displayName = guest.fullName || guest.customerId || guest._id?.slice(-6) || 'khách này';
-    if (!window.confirm(`Bạn có chắc muốn xóa "${displayName}"?`)) {
+    const displayName = guest.fullName || guest.customerId || guest._id?.slice(-6) || 'this guest';
+    if (!window.confirm(`Delete "${displayName}"?`)) {
       return;
     }
 
     try {
       await guestService.deleteGuest(guest._id);
-      alert('Xóa khách hàng thành công!');
+      alert('Guest deleted successfully!');
       loadGuests();
     } catch (err) {
-      alert('Lỗi: ' + (err.message || 'Không thể xóa khách hàng'));
+      alert('Error: ' + (err.message || 'Could not delete guest'));
     }
   };
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h2 className={styles.sectionTitle}>Quản lý khách hàng</h2>
+      <div className={styles.flexBetween}>
+        <h2 className={styles.sectionTitle}>Guests</h2>
         <button
           className={`${buttonStyles.primary} ${buttonStyles.md}`}
           onClick={() => {
@@ -108,26 +109,19 @@ const GuestsTab = () => {
             setShowModal(true);
           }}
         >
-          <Plus size={18} style={{ marginRight: '0.5rem' }} />
-          Thêm khách hàng
+          <Plus size={18} aria-hidden />
+          Add guest
         </button>
       </div>
 
-      {/* Search */}
-      <div style={{ marginBottom: '1.5rem', position: 'relative' }}>
-        <Search size={20} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+      <div className={styles.searchInputWrap}>
+        <Search size={20} className={styles.searchIcon} aria-hidden />
         <input
           type="text"
-          placeholder="Tìm kiếm theo tên hoặc số điện thoại..."
+          className={styles.searchField}
+          placeholder="Search by name or phone..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '0.75rem 1rem 0.75rem 2.5rem',
-            borderRadius: '0.5rem',
-            border: '1px solid #d1d5db',
-            fontSize: '0.875rem'
-          }}
         />
       </div>
 
@@ -136,19 +130,19 @@ const GuestsTab = () => {
         <table className={tableStyles.table}>
           <thead>
             <tr>
-              <th className={tableStyles.th}>Mã KH</th>
-              <th className={tableStyles.th}>Họ tên</th>
-              <th className={tableStyles.th}>Số điện thoại</th>
+              <th className={tableStyles.th}>Guest ID</th>
+              <th className={tableStyles.th}>Full name</th>
+              <th className={tableStyles.th}>Phone</th>
               <th className={tableStyles.th}>Email</th>
-              <th className={tableStyles.th}>Địa chỉ</th>
-              <th className={tableStyles.th}>Thao tác</th>
+              <th className={tableStyles.th}>Address</th>
+              <th className={tableStyles.th}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td className={tableStyles.td} colSpan={6}>Đang tải...</td></tr>
+              <tr><td className={tableStyles.td} colSpan={6}>Loading...</td></tr>
             ) : guests.length === 0 ? (
-              <tr><td className={tableStyles.td} colSpan={6}>Không có khách hàng nào</td></tr>
+              <tr><td className={tableStyles.td} colSpan={6}>No guests</td></tr>
             ) : (
               guests.map(guest => (
                 <tr key={guest._id}>
@@ -158,18 +152,18 @@ const GuestsTab = () => {
                   <td className={tableStyles.td}>{guest.email || '—'}</td>
                   <td className={tableStyles.td}>{guest.address || '—'}</td>
                   <td className={tableStyles.td}>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div className={styles.rowActions}>
                       <button
                         className={tableStyles.actionBtn}
                         onClick={() => handleEdit(guest)}
-                        title="Chỉnh sửa"
+                        title="Edit"
                       >
                         <Edit size={16} />
                       </button>
                       <button
                         className={tableStyles.actionBtn}
                         onClick={() => handleDelete(guest)}
-                        title="Xóa khách"
+                        title="Delete guest"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -186,82 +180,57 @@ const GuestsTab = () => {
       {showModal && (
         <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h2>{editingGuestId ? 'Chỉnh sửa khách hàng' : 'Thêm khách hàng mới'}</h2>
+            <h2 className={styles.modalFormTitle}>{editingGuestId ? 'Edit guest' : 'Add guest'}</h2>
             <form onSubmit={handleSubmit}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div className={styles.modalFormStack}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-                    Họ và tên <span style={{ color: '#ef4444' }}>*</span>
+                  <label className={styles.formLabel}>
+                    Full name <span className={styles.reqStar}>*</span>
                   </label>
                   <input
                     type="text"
+                    className={styles.formInputDark}
                     required
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
-                      fontSize: '0.875rem'
-                    }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-                    Số điện thoại <span style={{ color: '#ef4444' }}>*</span>
+                  <label className={styles.formLabel}>
+                    Phone <span className={styles.reqStar}>*</span>
                   </label>
                   <input
                     type="tel"
+                    className={styles.formInputDark}
                     required
                     value={formData.phoneNumber}
                     onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
-                      fontSize: '0.875rem'
-                    }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
+                  <label className={styles.formLabel}>
                     Email
                   </label>
                   <input
                     type="email"
+                    className={styles.formInputDark}
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
-                      fontSize: '0.875rem'
-                    }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 500 }}>
-                    Địa chỉ
+                  <label className={styles.formLabel}>
+                    Address
                   </label>
                   <textarea
+                    className={styles.textareaDark}
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                     rows={3}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: '0.375rem',
-                      border: '1px solid #d1d5db',
-                      fontSize: '0.875rem',
-                      resize: 'vertical'
-                    }}
                   />
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', justifyContent: 'flex-end' }}>
+              <div className={styles.modalFooterBar}>
                 <button
                   type="button"
                   className={`${buttonStyles.secondary} ${buttonStyles.md}`}
@@ -271,13 +240,13 @@ const GuestsTab = () => {
                     setFormData({ fullName: '', phoneNumber: '', email: '', address: '' });
                   }}
                 >
-                  Hủy
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className={`${buttonStyles.primary} ${buttonStyles.md}`}
                 >
-                  {editingGuestId ? 'Cập nhật' : 'Tạo mới'}
+                  {editingGuestId ? 'Update' : 'Create'}
                 </button>
               </div>
             </form>
@@ -289,4 +258,3 @@ const GuestsTab = () => {
 };
 
 export default GuestsTab;
-

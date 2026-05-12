@@ -2,17 +2,17 @@ const asyncHandler = require('express-async-handler');
 const User = require('../models/userModel');
 
 /**
- * @desc    Tạo tài khoản nhân viên mới
+ * @desc    Create staff account
  * @route   POST /api/employees
  * @access  Private/Manager
  */
 const createEmployee = asyncHandler(async (req, res) => {
-    const { name, email, password, role } = req.body; // Khớp với userModel
+    const { name, email, password, role } = req.body;
 
     const userExists = await User.findOne({ email });
     if (userExists) {
-        res.status(400); 
-        throw new Error('Email đã tồn tại');
+        res.status(400);
+        throw new Error('Email already exists');
     }
 
     const user = await User.create({
@@ -31,12 +31,12 @@ const createEmployee = asyncHandler(async (req, res) => {
         });
     } else {
         res.status(400);
-        throw new Error('Dữ liệu người dùng không hợp lệ');
+        throw new Error('Invalid user data');
     }
 });
 
 /**
- * @desc    Lấy danh sách nhân viên
+ * @desc    List employees
  * @route   GET /api/employees
  * @access  Private/Manager
  */
@@ -45,14 +45,13 @@ const getAllEmployees = asyncHandler(async (req, res) => {
     if (req.query.role) {
         filter.role = req.query.role;
     }
-    // userModel không có 'status', nên bỏ qua filter 'status'
-    
+
     const users = await User.find(filter).select('-password');
     res.json(users);
 });
 
 /**
- * @desc    Lấy chi tiết 1 nhân viên
+ * @desc    Get employee by ID
  * @route   GET /api/employees/:id
  * @access  Private/Manager
  */
@@ -62,31 +61,35 @@ const getEmployeeById = asyncHandler(async (req, res) => {
         res.json(user);
     } else {
         res.status(404);
-        throw new Error('Không tìm thấy nhân viên');
+        throw new Error('Employee not found');
     }
 });
 
 /**
- * @desc    Cập nhật thông tin nhân viên
+ * @desc    Update employee
  * @route   PUT /api/employees/:id
  * @access  Private/Manager
  */
 const updateEmployee = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id).select('+password');
 
     if (user) {
-        const { name, email, role } = req.body; // userModel không có 'status' hay 'phoneNumber'
+        const { name, email, role, password } = req.body;
 
-        user.name = name || user.name;
-        user.role = role || user.role;
-        
+        if (name !== undefined) user.name = name;
+        if (role !== undefined) user.role = role;
+
         if (email && email !== user.email) {
             const emailExists = await User.findOne({ email });
             if (emailExists) {
                 res.status(400);
-                throw new Error('Email đã được sử dụng');
+                throw new Error('Email is already in use');
             }
             user.email = email;
+        }
+
+        if (password) {
+            user.password = password;
         }
 
         const updatedUser = await user.save();
@@ -98,32 +101,31 @@ const updateEmployee = asyncHandler(async (req, res) => {
         });
     } else {
         res.status(404);
-        throw new Error('Không tìm thấy nhân viên');
+        throw new Error('Employee not found');
     }
 });
 
 /**
- * @desc    Xóa nhân viên
+ * @desc    Delete employee
  * @route   DELETE /api/employees/:id
  * @access  Private/Manager
  */
 const deleteEmployee = asyncHandler(async (req, res) => {
     const user = await User.findById(req.params.id);
-    
+
     if (user) {
-        // userModel không có 'status', nên phải xóa cứng
         await User.deleteOne({ _id: user._id });
-        res.json({ message: 'Nhân viên đã được xóa' });
+        res.json({ message: 'Employee deleted' });
     } else {
         res.status(404);
-        throw new Error('Không tìm thấy nhân viên');
+        throw new Error('Employee not found');
     }
 });
 
-module.exports = { 
+module.exports = {
   createEmployee,
-  getAllEmployees, 
-  getEmployeeById, 
-  updateEmployee, 
-  deleteEmployee 
+  getAllEmployees,
+  getEmployeeById,
+  updateEmployee,
+  deleteEmployee
 };

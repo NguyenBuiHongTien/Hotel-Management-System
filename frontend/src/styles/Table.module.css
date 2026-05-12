@@ -1,13 +1,11 @@
-/* ===== CONTAINER ===== */
 .container {
-  background: white;
+  background: linear-gradient(165deg, #161512 0%, #121210 100%);
   border-radius: 1rem;
   padding: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(212, 175, 55, 0.22);
 }
 
-/* ===== HEADER ===== */
 .header {
   display: flex;
   justify-content: space-between;
@@ -21,35 +19,35 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e293b;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #faf6ec;
   margin: 0;
 }
 
-/* ===== TABLE WRAPPER ===== */
 .tableWrapper {
   overflow-x: auto;
   border-radius: 0.75rem;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  background: #0a0a0c;
 }
 
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9375rem;
+  font-size: 0.9rem;
 }
 
 .table th {
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  color: white;
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.14) 0%, rgba(212, 175, 55, 0.06) 100%);
+  color: #e8c547;
   text-align: left;
-  padding: 0.875rem 1rem;
+  padding: 0.85rem 1rem;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
 }
 
 .table th:first-child {
@@ -62,119 +60,195 @@
 
 .table th svg {
   display: inline-block;
-  margin-right: 0.375rem;
+  margin-right: 0.35rem;
   vertical-align: -2px;
+  opacity: 0.85;
 }
 
-/* ===== ROW ===== */
 .row {
-  transition: all 0.2s ease;
+  transition: background 0.15s ease;
 }
 
 .row:hover {
-  background: #eef2ff;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.1);
+  background: rgba(212, 175, 55, 0.06);
 }
 
 .row td {
-  padding: 1rem;
-  border-bottom: 1px solid #e2e8f0;
-  color: #475569;
+  padding: 0.95rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(250, 246, 236, 0.82);
 }
 
-/* ===== CELL STYLES ===== */
 .id {
-  font-family: 'Courier New', monospace;
+  font-family: ui-monospace, monospace;
   font-weight: 700;
-  color: #4f46e5;
+  color: #e8c547;
 }
 
 .customer {
   font-weight: 600;
-  color: #1e293b;
+  color: #faf6ec;
 }
 
 .room {
-  color: #7c3aed;
+  color: #fcd34d;
   font-weight: 500;
 }
 
 .date {
-  color: #64748b;
+  color: rgba(250, 246, 236, 0.45);
   font-size: 0.875rem;
 }
 
 .price {
   font-weight: 700;
-  color: #16a34a;
+  color: #86efac;
 }
 
-/* ===== ACTIONS ===== */
 .actions {
   display: flex;
   gap: 0.5rem;
 }
 
-.editBtn, .deleteBtn {
-  padding: 0.375rem;
+.editBtn,
+.deleteBtn {
+  padding: 0.4rem;
   border: none;
   border-radius: 0.375rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .editBtn {
-  background: #dbeafe;
-  color: #4f46e5;
+  background: rgba(212, 175, 55, 0.15);
+  color: #e8c547;
 }
 
 .editBtn:hover {
-  background: #c7d2fe;
-  transform: scale(1.1);
+  background: rgba(212, 175, 55, 0.28);
+  transform: scale(1.05);
 }
 
 .deleteBtn {
-  background: #fee2e2;
-  color: #dc2626;
+  background: rgba(127, 29, 29, 0.35);
+  color: #fecaca;
 }
 
 .deleteBtn:hover {
-  background: #fecaca;
-  transform: scale(1.1);
+  background: rgba(127, 29, 29, 0.5);
+  transform: scale(1.05);
 }
 
-/* ===== MODAL ===== */
 .modalOverlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Avoid backdrop-filter: on Chromium it can clip <input type="date"> popovers or break clicks */
+  background: rgba(0, 0, 0, 0.82);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  padding: 1rem;
 }
 
 .modal {
-  background: white;
+  background: linear-gradient(180deg, #161512 0%, #0e0e10 100%);
+  border: 1px solid rgba(212, 175, 55, 0.35);
   border-radius: 1rem;
   padding: 2rem;
   width: 90%;
   max-width: 500px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.55);
   animation: modalPop 0.3s ease;
+  color: #faf6ec;
+}
+
+.modal input[type="date"] {
+  color-scheme: dark;
+}
+
+.modalBooking {
+  max-width: 560px;
+}
+
+/* Check-in / check-out date block in booking modal — avoids duplicating formGrid rows */
+.bookingDatesBlock {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.bookingDatesFields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.25rem;
+  align-items: flex-end;
+}
+
+.bookingDateField {
+  flex: 1 1 11.5rem;
+  min-width: 10.5rem;
+  max-width: 100%;
+}
+
+.bookingDateField label {
+  display: block;
+  font-weight: 600;
+  color: rgba(250, 246, 236, 0.65);
+  margin-bottom: 0.45rem;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+}
+
+.bookingDatesHint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: rgba(250, 246, 236, 0.55);
+}
+
+.bookingGuestBlock {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  background: rgba(8, 8, 10, 0.45);
+}
+
+.bookingGuestFields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.dateInput {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  color-scheme: dark;
 }
 
 @keyframes modalPop {
-  from { transform: scale(0.9); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.94);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
-/* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
@@ -182,13 +256,19 @@
   }
 
   .title {
-    font-size: 1.375rem;
+    font-size: 1.1rem;
   }
 
   .table th,
   .table td {
-    padding: 0.75rem 0.5rem;
-    font-size: 0.875rem;
+    padding: 0.7rem 0.5rem;
+    font-size: 0.8125rem;
+  }
+
+  .th,
+  .td {
+    padding: 0.7rem 0.5rem;
+    font-size: 0.8125rem;
   }
 
   .table th svg,
@@ -207,13 +287,62 @@
   }
 
   .table th,
-  .table td {
-    padding: 0.5rem 0.375rem;
-    font-size: 0.8rem;
+  .table td,
+  .th,
+  .td {
+    padding: 0.55rem 0.35rem;
+    font-size: 0.78rem;
   }
 }
 
-/* ===== FORM (ĐẶT PHÒNG) ===== */
+/* ----- Table with thead/tbody + dedicated classes (InvoicesTab, ReportsTab, …) ----- */
+.tableContainer {
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  background: #0a0a0c;
+}
+
+.th {
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.14) 0%, rgba(212, 175, 55, 0.06) 100%);
+  color: #e8c547;
+  text-align: left;
+  padding: 0.85rem 1rem;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(250, 246, 236, 0.85);
+  font-size: 0.9rem;
+}
+
+.table tbody tr:hover .td {
+  background: rgba(212, 175, 55, 0.04);
+}
+
+.actionBtn {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: 0.4rem;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  background: rgba(212, 175, 55, 0.12);
+  color: #e8c547;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.actionBtn:hover {
+  background: rgba(212, 175, 55, 0.22);
+  border-color: rgba(212, 175, 55, 0.5);
+}
+
 .formContainer {
   margin-top: 1.5rem;
   display: flex;
@@ -230,28 +359,29 @@
 .formGrid label {
   display: block;
   font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 0.5rem;
+  color: rgba(250, 246, 236, 0.65);
+  margin-bottom: 0.45rem;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
 }
 
 .formGrid input,
 .formGrid select {
   width: 100%;
-  padding: 0.625rem 0.75rem;
-  border: 1px solid #cbd5e1;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(212, 175, 55, 0.2);
   border-radius: 0.5rem;
-  background: #f8fafc;
-  font-size: 0.9375rem;
-  color: #334155;
-  transition: all 0.2s ease;
+  background: #0a0a0c;
+  font-size: 0.9rem;
+  color: #faf6ec;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .formGrid input:focus,
 .formGrid select:focus {
   outline: none;
-  border-color: #6366f1;
-  background: white;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  border-color: #d4af37;
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.12);
 }
 
 .formActions {
@@ -261,32 +391,31 @@
   margin-top: 1rem;
 }
 
-/* ===== BUTTONS (trong modal) ===== */
 .formActions button {
   font-weight: 600;
   border-radius: 0.5rem;
-  padding: 0.625rem 1.25rem;
+  padding: 0.65rem 1.25rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: filter 0.15s ease, transform 0.15s ease;
 }
 
 .formActions .primary {
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  color: white;
-  border: none;
+  background: linear-gradient(165deg, #e8c547 0%, #d4af37 100%);
+  color: #030303;
+  border: 1px solid rgba(255, 240, 200, 0.3);
 }
 
 .formActions .primary:hover {
-  background: linear-gradient(135deg, #4338ca, #6d28d9);
+  filter: brightness(1.08);
   transform: translateY(-1px);
 }
 
 .formActions .secondary {
-  background: #e2e8f0;
-  color: #334155;
-  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(250, 246, 236, 0.85);
+  border: 1px solid rgba(212, 175, 55, 0.15);
 }
 
 .formActions .secondary:hover {
-  background: #cbd5e1;
+  background: rgba(255, 255, 255, 0.1);
 }

@@ -7,35 +7,35 @@ module.exports = async function seedRoomTypes() {
     const roomTypes = [
       {
         typeName: 'Single',
-        description: 'Phòng đơn với 1 giường đơn',
+        description: 'Single room with one single bed',
         basePrice: 500000,
         capacity: 1,
         amenities: ['wifi', 'tv', 'ac', 'minibar']
       },
       {
         typeName: 'Double',
-        description: 'Phòng đôi với 1 giường đôi',
+        description: 'Double room with one double bed',
         basePrice: 800000,
         capacity: 2,
         amenities: ['wifi', 'tv', 'ac', 'minibar', 'bathtub']
       },
       {
         typeName: 'Twin',
-        description: 'Phòng đôi với 2 giường đơn',
+        description: 'Twin room with two single beds',
         basePrice: 850000,
         capacity: 2,
         amenities: ['wifi', 'tv', 'ac', 'minibar', 'bathtub']
       },
       {
         typeName: 'Suite',
-        description: 'Phòng suite sang trọng',
+        description: 'Luxury suite',
         basePrice: 1500000,
         capacity: 4,
         amenities: ['wifi', 'tv', 'ac', 'minibar', 'bathtub', 'balcony', 'jacuzzi']
       },
       {
         typeName: 'Deluxe',
-        description: 'Phòng deluxe cao cấp',
+        description: 'Premium deluxe room',
         basePrice: 1200000,
         capacity: 3,
         amenities: ['wifi', 'tv', 'ac', 'minibar', 'bathtub', 'balcony']
@@ -46,7 +46,7 @@ module.exports = async function seedRoomTypes() {
     console.log('✅ Room Types seeded successfully!');
     console.log(`\n📊 Created ${createdRoomTypes.length} room types:\n`);
     roomTypes.forEach((type, index) => {
-      console.log(`   ${index + 1}. ${type.typeName} - ${type.basePrice.toLocaleString('vi-VN')} VNĐ/đêm`);
+      console.log(`   ${index + 1}. ${type.typeName} - ${type.basePrice.toLocaleString('en-US')} VND/night`);
     });
     console.log('\n');
 };

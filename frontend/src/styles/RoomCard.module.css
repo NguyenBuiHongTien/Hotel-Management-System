@@ -1,10 +1,10 @@
 .roomCard {
-  background: var(--color-card);
-  border-radius: var(--radius-lg);
-  padding: 1.25rem;
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-md);
-  transition: var(--transition);
+  background: linear-gradient(165deg, #161512 0%, #121210 100%);
+  border-radius: 0.85rem;
+  padding: 1.2rem;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -18,65 +18,81 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  height: 3px;
+  background: linear-gradient(90deg, #e8c547, #d4af37, rgba(212, 175, 55, 0.2));
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.25s ease;
+}
+
+.roomCard:hover {
+  border-color: rgba(212, 175, 55, 0.4);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  transform: translateY(-2px);
 }
 
 .roomCard:hover::before {
   opacity: 1;
 }
 
-/* Header chứa tên phòng */
 .roomHeader {
   display: flex;
-  justify-content: space-between; /* tên phòng bên trái, badge + giá bên phải */
+  justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.65rem;
 }
 
 .roomName {
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: var(--color-text);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #faf6ec;
 }
 
-/* Hàng chứa badge + giá */
 .statusPriceRow {
   display: flex;
-  justify-content: space-between; /* badge trái, giá phải */
+  justify-content: space-between;
   align-items: center;
-  margin-top: 0.5rem;
+  margin-top: 0.45rem;
 }
 
-/* Badge trạng thái */
 .statusBadge {
-  padding: 0.25rem 0.75rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.75rem;
-  font-weight: 600;
+  padding: 0.25rem 0.65rem;
+  border-radius: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.06em;
 }
 
-.statusAvailable { background: #dcfce7; color: #166534; }
-.statusOccupied  { background: #fee2e2; color: #991b1b; }
-.statusCleaning  { background: #fef3c7; color: #92400e; }
+.statusAvailable {
+  background: rgba(22, 101, 52, 0.35);
+  color: #bbf7d0;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
 
-/* Giá tiền căn phải */
+.statusOccupied {
+  background: rgba(127, 29, 29, 0.35);
+  color: #fecaca;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.statusCleaning {
+  background: rgba(120, 53, 15, 0.4);
+  color: #fde68a;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
 .price {
   font-weight: 700;
-  font-size: 1rem;
-  color: var(--color-primary);
+  font-size: 0.95rem;
+  color: #e8c547;
   text-align: right;
 }
 
 .roomInfo {
   flex-grow: 1;
-  font-size: 0.875rem;
-  color: var(--color-text-light);
-  margin-bottom: 1rem;
+  font-size: 0.82rem;
+  color: rgba(250, 246, 236, 0.55);
+  margin-bottom: 0.85rem;
 }
 
 .roomActions {
@@ -86,20 +102,20 @@
 }
 
 .btn {
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.875rem;
-  font-weight: 500;
+  padding: 0.45rem 0.9rem;
+  border-radius: 0.4rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: var(--transition);
+  transition: background 0.15s ease, filter 0.15s ease;
 }
 
 .btnPrimary {
-  background: var(--color-primary);
-  color: white;
+  background: linear-gradient(165deg, #e8c547 0%, #d4af37 100%);
+  color: #030303;
   border: none;
 }
 
 .btnPrimary:hover {
-  background: #4338ca;
+  filter: brightness(1.08);
 }

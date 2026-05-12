@@ -29,7 +29,7 @@ const fixAccountantRole = async () => {
       const newAccountant = await User.create({
         name: 'Accountant',
         email: 'accountant@hotel.com',
-        password: await bcrypt.hash('123456', 10),
+        password: await bcrypt.hash('HotelDemo1', 10),
         role: 'accountant'
       });
       console.log('✅ Created accountant user:', newAccountant.email, 'Role:', newAccountant.role);
@@ -73,7 +73,7 @@ const fixAccountantRole = async () => {
     console.log('✅ Done! Please:');
     console.log('   1. Clear localStorage in browser (token and user)');
     console.log('   2. Restart backend server');
-    console.log('   3. Login again with accountant@hotel.com / 123456\n');
+    console.log('   3. Login again with accountant@hotel.com / HotelDemo1\n');
 
     process.exit(0);
   } catch (error) {

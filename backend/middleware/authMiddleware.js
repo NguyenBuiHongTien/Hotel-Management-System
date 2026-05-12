@@ -17,8 +17,7 @@ const normalizeRole = (role) => {
     return ROLE_ALIASES[normalized] || normalized;
 };
 
-// 1. HÀM 'PROTECT'
-// JWT: ném lỗi có name TokenExpiredError / JsonWebTokenError để errorMiddleware trả 401 + message rõ ràng.
+// 1. PROTECT — JWT errors use TokenExpiredError / JsonWebTokenError so errorMiddleware returns clear 401 messages.
 const protect = asyncHandler(async (req, res, next) => {
     const authHeader = req.headers.authorization || '';
     if (!authHeader.startsWith('Bearer ')) {
@@ -45,12 +44,12 @@ const protect = asyncHandler(async (req, res, next) => {
     } catch (error) {
         res.status(401);
         if (error.name === 'TokenExpiredError') {
-            const e = new Error('Token đã hết hạn');
+            const e = new Error('Token has expired');
             e.name = 'TokenExpiredError';
             throw e;
         }
         if (error.name === 'JsonWebTokenError') {
-            const e = new Error('Token không hợp lệ');
+            const e = new Error('Invalid token');
             e.name = 'JsonWebTokenError';
             throw e;
         }
@@ -58,10 +57,7 @@ const protect = asyncHandler(async (req, res, next) => {
     }
 });
 
-// 2. HÀM 'AUTHORIZE' (Nâng cấp)
-// Thay thế cho 'admin' và 'staff'
-// Nó nhận vào một danh sách các vai trò được phép
-// Ví dụ: authorize('hotel manager', 'receptionist')
+// 2. AUTHORIZE — allow only listed roles (e.g. authorize('manager', 'receptionist')).
 const authorize = (...roles) => {
     return (req, res, next) => {
         if (!req.user) {
@@ -74,15 +70,14 @@ const authorize = (...roles) => {
 
         if (!allowedRoles.includes(userRole)) {
             res.status(403);
-            throw new Error('Không có quyền truy cập tài nguyên này');
+            throw new Error('You do not have permission to access this resource');
         }
 
         next();
     };
 };
 
-// 3. EXPORT MỚI
 module.exports = {
     protect,
-    authorize, // <-- Chúng ta sẽ dùng hàm này thay vì 'admin' và 'staff'
+    authorize,
 };

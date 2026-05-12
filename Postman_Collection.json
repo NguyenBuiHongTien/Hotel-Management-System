@@ -60,7 +60,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"manager@hotel.com\",\n  \"password\": \"123456\"\n}"
+              "raw": "{\n  \"email\": \"manager@hotel.com\",\n  \"password\": \"HotelDemo1\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/login",
@@ -670,7 +670,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": \"ROOM_ID_HERE\",\n  \"description\": \"Điều hòa không hoạt động\",\n  \"priority\": \"high\"\n}"
+              "raw": "{\n  \"roomId\": \"ROOM_ID_HERE\",\n  \"description\": \"AC not working\",\n  \"priority\": \"high\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/maintenance/issues",
@@ -908,7 +908,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"typeName\": \"Suite\",\n  \"description\": \"Phòng suite cao cấp\",\n  \"basePrice\": 1000000,\n  \"capacity\": 4,\n  \"amenities\": [\"wifi\", \"tv\", \"ac\", \"bathtub\", \"minibar\"]\n}"
+              "raw": "{\n  \"typeName\": \"Suite\",\n  \"description\": \"Premium suite\",\n  \"basePrice\": 1000000,\n  \"capacity\": 4,\n  \"amenities\": [\"wifi\", \"tv\", \"ac\", \"bathtub\", \"minibar\"]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/room-types",
@@ -997,7 +997,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"New Employee\",\n  \"email\": \"newemployee@hotel.com\",\n  \"password\": \"123456\",\n  \"role\": \"receptionist\"\n}"
+              "raw": "{\n  \"name\": \"New Employee\",\n  \"email\": \"newemployee@hotel.com\",\n  \"password\": \"HotelDemo1\",\n  \"role\": \"receptionist\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/employees",

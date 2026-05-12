@@ -4,7 +4,7 @@ const Booking = require('../models/bookingModel');
 const { startOfDay, endOfDay } = require('../utils/dateRange');
 
 /**
- * @desc    Tạo hóa đơn cho một booking (thường được gọi tự động)
+ * @desc    Generate invoice for a booking (often called automatically)
  * @route   POST /api/bookings/:bookingId/invoice
  * @access  Private (Receptionist, Manager, Accountant)
  */
@@ -13,7 +13,7 @@ const generateInvoiceForBooking = asyncHandler(async (req, res, next) => {
 
   const booking = await Booking.findById(bookingId);
   if (!booking) {
-    return res.status(404).json({ message: 'Không tìm thấy booking' });
+    return res.status(404).json({ message: 'Booking not found' });
   }
 
   const existing = await Invoice.findOne({ booking: bookingId });
@@ -35,14 +35,14 @@ const generateInvoiceForBooking = asyncHandler(async (req, res, next) => {
       if (again) {
         return res.status(200).json(again);
       }
-      return res.status(400).json({ message: 'Hóa đơn đã tồn tại cho booking này' });
+      return res.status(400).json({ message: 'An invoice already exists for this booking' });
     }
     throw e;
   }
 });
 
 /**
- * @desc    Lấy tất cả hóa đơn (Lịch sử giao dịch)
+ * @desc    List all invoices (transaction history)
  * @route   GET /api/invoices
  * @access  Private (Receptionist, Manager, Accountant)
  */
@@ -75,7 +75,7 @@ const getAllInvoices = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * @desc    Lấy chi tiết 1 hóa đơn
+ * @desc    Get invoice by ID
  * @route   GET /api/invoices/:invoiceId
  * @access  Private (Accountant, Manager, Receptionist)
  */
@@ -89,13 +89,13 @@ const getInvoiceById = asyncHandler(async (req, res, next) => {
         ]
       });
   if (!invoice) {
-    return res.status(404).json({ message: 'Không tìm thấy hóa đơn'});
+    return res.status(404).json({ message: 'Invoice not found'});
   }
   res.status(200).json(invoice);
 });
 
 /**
- * @desc    Lấy hóa đơn (view của khách) bằng Booking ID
+ * @desc    Guest-facing invoice view by booking ID
  * @route   GET /api/invoices/guest/:bookingId
  * @access  Private (Receptionist, Manager, Accountant)
  */
@@ -106,13 +106,13 @@ const getGuestInvoiceView = asyncHandler(async (req, res, next) => {
             populate: [ { path: 'guest' }, { path: 'room' } ]
         });
     if (!invoice) {
-        return res.status(404).json({ message: 'Không tìm thấy hóa đơn cho booking này'});
+        return res.status(404).json({ message: 'No invoice found for this booking'});
     }
     res.json(invoice);
 });
 
 /**
- * @desc    Lấy hóa đơn (view tài chính) bằng Booking ID — đầy đủ booking/guest/room và người tạo booking
+ * @desc    Financial invoice view by booking ID (full booking/guest/room and creator)
  * @route   GET /api/invoices/financial/:bookingId
  * @access  Private (Accountant)
  */
@@ -127,7 +127,7 @@ const getFinancialInvoiceView = asyncHandler(async (req, res, next) => {
             ],
         });
     if (!invoice) {
-        return res.status(404).json({ message: 'Không tìm thấy hóa đơn cho booking này'});
+        return res.status(404).json({ message: 'No invoice found for this booking'});
     }
     res.json(invoice);
 });

@@ -1,4 +1,4 @@
-# Bỏ qua khi build Docker - giảm kích thước image
+# Ignored during Docker build — smaller image context
 node_modules
 npm-debug.log
 .env

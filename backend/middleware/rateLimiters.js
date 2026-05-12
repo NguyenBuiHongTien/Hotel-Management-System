@@ -4,57 +4,56 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 const multiplier = isDevelopment ? 4 : 1;
 const withEnvScale = (value) => Math.round(value * multiplier);
 
-// Rate limiter cho login (chống brute force)
+// Login rate limiter (brute-force protection)
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: withEnvScale(5),
   skipSuccessfulRequests: true,
-  message: 'Quá nhiều lần đăng nhập thất bại, vui lòng thử lại sau 15 phút',
+  message: 'Too many failed login attempts. Please try again in 15 minutes.',
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Limiter cho toàn bộ auth routes (nhẹ hơn loginLimiter, nhưng vẫn chặt)
+// All auth routes (lighter than loginLimiter)
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 phút
+  windowMs: 15 * 60 * 1000,
   max: withEnvScale(50),
-  message: 'Quá nhiều request liên quan xác thực, vui lòng thử lại sau',
+  message: 'Too many auth-related requests. Please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Limiter mạnh cho các request ghi dữ liệu
+// Stricter limiter for mutating requests
 const writeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: withEnvScale(80),
   skip: (req) => ['GET', 'HEAD', 'OPTIONS'].includes(req.method),
-  message: 'Quá nhiều request ghi dữ liệu, vui lòng thử lại sau',
+  message: 'Too many write requests. Please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Limiter mặc định cho API GET
+// Default API GET limiter
 const readLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: withEnvScale(180),
   skip: (req) => {
     if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return true;
-    // Các endpoint này sẽ dùng limiter nhẹ riêng
     return req.path.startsWith('/dashboard')
       || req.path.startsWith('/room-types')
       || req.path.startsWith('/transactions');
   },
-  message: 'Quá nhiều request, vui lòng thử lại sau',
+  message: 'Too many requests. Please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Limiter nhẹ hơn cho dashboard và room-types (GET)
+// Lighter limiter for dashboard and room-types (GET)
 const lightReadLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: withEnvScale(400),
   skip: (req) => !['GET', 'HEAD', 'OPTIONS'].includes(req.method),
-  message: 'Quá nhiều request, vui lòng thử lại sau',
+  message: 'Too many requests. Please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });

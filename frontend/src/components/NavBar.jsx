@@ -13,7 +13,7 @@ const NavBar = ({ title, icon: Icon, onLogout }) => {
 
         <button onClick={onLogout} className={styles.logoutBtn}>
           <LogOut />
-          <span>Đăng xuất</span>
+          <span>Log out</span>
         </button>
       </div>
     </nav>

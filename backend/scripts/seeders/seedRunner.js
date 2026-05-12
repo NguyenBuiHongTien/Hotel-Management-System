@@ -1,42 +1,39 @@
 /**
- * Seed Runner - Quản lý thứ tự seed cho các hệ thống lớn
- * 
- * Cách sử dụng:
- * - npm run seed:all    -> Seed tất cả theo thứ tự
- * - npm run seed:users  -> Chỉ seed users
- * - npm run seed:room-types -> Chỉ seed room types
- * - npm run seed:rooms  -> Chỉ seed rooms
+ * Seed runner — ordered seeds for larger setups.
+ *
+ * Usage:
+ * - npm run seed:all    -> Seed everything in order
+ * - npm run seed:users  -> Users only
+ * - npm run seed:room-types -> Room types only
+ * - npm run seed:rooms  -> Rooms only
  */
 
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const path = require('path');
 
-// Load environment variables
-// __dirname ở đây là backend/scripts/seeders -> cần đi lên 2 cấp để tới backend/.env
+// __dirname is backend/scripts/seeders — go up two levels for backend/.env
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
-// Import các seed functions
 const seedUsers = require('./seedUsers');
 const seedRoomTypes = require('./seedRoomTypes');
 const seedRooms = require('./seedRooms');
 
-// Định nghĩa thứ tự seed và dependencies
 const SEED_ORDER = [
   {
     name: 'users',
     fn: seedUsers,
-    dependencies: [] // Không phụ thuộc gì
+    dependencies: []
   },
   {
     name: 'room-types',
     fn: seedRoomTypes,
-    dependencies: [] // Không phụ thuộc gì
+    dependencies: []
   },
   {
     name: 'rooms',
     fn: seedRooms,
-    dependencies: ['room-types'] // Phụ thuộc vào room-types
+    dependencies: ['room-types']
   }
 ];
 
@@ -64,12 +61,11 @@ const disconnectDB = async () => {
 
 const runSeed = async (seedName) => {
   const seedConfig = SEED_ORDER.find(s => s.name === seedName);
-  
+
   if (!seedConfig) {
     throw new Error(`Seed "${seedName}" not found`);
   }
 
-  // Kiểm tra dependencies
   for (const dep of seedConfig.dependencies) {
     const depConfig = SEED_ORDER.find(s => s.name === dep);
     if (depConfig) {
@@ -84,7 +80,7 @@ const runSeed = async (seedName) => {
 
 const runAllSeeds = async () => {
   console.log('🚀 Starting seed process...\n');
-  
+
   for (const seedConfig of SEED_ORDER) {
     try {
       console.log(`🌱 Seeding: ${seedConfig.name}...`);
@@ -95,28 +91,25 @@ const runAllSeeds = async () => {
       throw error;
     }
   }
-  
+
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('✅ All seeds completed successfully!');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 };
 
-// Main execution
 const main = async () => {
   try {
     await connectDB();
-    
+
     const args = process.argv.slice(2);
     const seedName = args[0];
 
     if (seedName) {
-      // Seed một phần cụ thể
       await runSeed(seedName);
     } else {
-      // Seed tất cả
       await runAllSeeds();
     }
-    
+
     await disconnectDB();
     process.exit(0);
   } catch (error) {
@@ -127,4 +120,3 @@ const main = async () => {
 };
 
 main();
-

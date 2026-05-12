@@ -14,16 +14,16 @@ const { protect, authorize } = require('../../middleware/authMiddleware');
 
 router.use(protect, authorize('manager', 'accountant'));
 
-// Xem nhanh (GET — không ghi DB)
+// Previews (GET, no DB write)
 router.get('/occupancy', getOccupancyReportPreview);
 router.get('/revenue', getRevenueReportPreview);
 router.get('/comprehensive/export', exportComprehensiveReport);
 
-// Lưu báo cáo (POST — có ghi DB)
+// Persisted reports (POST writes DB)
 router.post('/occupancy/save', saveOccupancyReport);
 router.post('/revenue/save', saveRevenueReport);
 
-// Danh sách / chi tiết báo cáo đã lưu
+// List / detail saved reports
 router.get('/', listGeneratedReports);
 router.get('/:reportId', getGeneratedReportById);
 

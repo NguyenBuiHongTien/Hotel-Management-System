@@ -12,7 +12,7 @@ const { protect, authorize } = require('../../middleware/authMiddleware');
 
 router.route('/')
     .post(protect, authorize('manager'), createRoomType)
-    .get(protect, authorize('manager', 'receptionist'), getAllRoomTypes); // Cho phép Lễ tân xem
+    .get(protect, authorize('manager', 'receptionist'), getAllRoomTypes);
 
 router.route('/:id')
     .get(protect, authorize('manager', 'receptionist'), getRoomTypeById)

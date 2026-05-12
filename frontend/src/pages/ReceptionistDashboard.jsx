@@ -13,20 +13,20 @@ const ReceptionistDashboard = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState('bookings');
 
   const tabs = [
-    { id: 'bookings', label: 'Đặt phòng', icon: Calendar },
-    { id: 'rooms', label: 'Phòng', icon: Bed },
+    { id: 'bookings', label: 'Bookings', icon: Calendar },
+    { id: 'rooms', label: 'Rooms', icon: Bed },
     { id: 'checkin', label: 'Check-in/Check-out', icon: LogIn },
-    { id: 'guests', label: 'Khách hàng', icon: Users },
-    { id: 'invoices', label: 'Hóa đơn', icon: FileText },
-    { id: 'payments', label: 'Thanh toán', icon: CreditCard },
+    { id: 'guests', label: 'Guests', icon: Users },
+    { id: 'invoices', label: 'Invoices', icon: FileText },
+    { id: 'payments', label: 'Payments', icon: CreditCard },
   ];
 
   return (
     <div className={styles.container}>
-      <NavBar title="Lễ tân" icon={Home} onLogout={onLogout} />
+      <NavBar title="Front desk" icon={Home} onLogout={onLogout} />
       
       <div className={styles.content}>
-        {/* === TAB NAVIGATION – ĐẸP, CÓ ICON === */}
+        {/* Tab navigation with icons */}
         <div className={styles.tabNav}>
           {tabs.map(tab => {
             const Icon = tab.icon;

@@ -20,33 +20,33 @@ const checkIn = asyncHandler(async (req, res) => {
     const booking = await Booking.findById(bookingId).session(session);
     if (!booking) {
       res.status(404);
-      throw new Error('Không tìm thấy booking');
+      throw new Error('Booking not found');
     }
     if (booking.status !== 'confirmed') {
       res.status(400);
-      throw new Error(`Booking đang ở trạng thái '${booking.status}', không thể check-in`);
+      throw new Error(`Booking status is '${booking.status}'; check-in is not allowed`);
     }
 
     const room = await Room.findById(booking.room).session(session);
     if (!room) {
       res.status(404);
-      throw new Error('Không tìm thấy phòng gắn với booking');
+      throw new Error('Room linked to booking not found');
     }
     if (room.status !== 'available') {
       res.status(400);
       let hint = '';
       if (room.status === 'dirty' || room.status === 'cleaning') {
         hint =
-          ' Buồng phòng cần hoàn tất dọn và chuyển phòng sang trạng thái "available" trước khi check-in (đặt phòng khi phòng dirty/cleaning là đặt trước, chưa đủ điều kiện nhận khách).';
+          ' Housekeeping must finish cleaning and set the room to "available" before check-in (booking while dirty/cleaning is advance booking only).';
       } else if (room.status === 'maintenance') {
         hint =
-          ' Cần hoàn tất bảo trì và chuyển phòng sang "available" (hoặc trạng thái phù hợp quy trình) trước khi nhận khách.';
+          ' Complete maintenance and set the room to "available" (or the appropriate workflow status) before accepting guests.';
       } else if (room.status === 'occupied') {
         hint =
-          ' Phòng đang được ghi nhận có khách; kiểm tra dữ liệu booking/phòng hoặc xử lý check-out trước đó nếu đây là lỗi dữ liệu.';
+          ' Room is marked occupied; verify booking/room data or complete check-out first if this is a data issue.';
       }
       throw new Error(
-        `Phòng đang ở trạng thái '${room.status}', chỉ có thể check-in khi phòng ở trạng thái 'available'.${hint}`
+        `Room status is '${room.status}'; check-in is only allowed when the room is 'available'.${hint}`
       );
     }
 
@@ -67,11 +67,11 @@ const checkIn = asyncHandler(async (req, res) => {
         emailResult = await sendCheckInEmail(bookingForEmail);
       } else {
         console.warn(
-          `[email] Không tải lại booking sau check-in, bookingId=${booking._id}`
+          `[email] Could not reload booking after check-in, bookingId=${booking._id}`
         );
       }
     } catch (mailErr) {
-      console.error(`[email] Gửi check-in thất bại, bookingId=${booking._id}:`, mailErr.message);
+      console.error(`[email] Check-in email send failed, bookingId=${booking._id}:`, mailErr.message);
       emailResult = { sent: false, reason: 'email_send_failed', error: mailErr.message };
     }
 
@@ -104,11 +104,11 @@ const checkOut = asyncHandler(async (req, res) => {
     const booking = await Booking.findById(bookingId).session(session);
     if (!booking) {
       res.status(404);
-      throw new Error('Không tìm thấy booking');
+      throw new Error('Booking not found');
     }
     if (booking.status !== 'checked_in') {
       res.status(400);
-      throw new Error(`Booking đang ở trạng thái '${booking.status}', không thể check-out`);
+      throw new Error(`Booking status is '${booking.status}'; check-out is not allowed`);
     }
 
     await Room.findByIdAndUpdate(booking.room, { status: 'dirty' }).session(session);
@@ -145,16 +145,16 @@ const checkOut = asyncHandler(async (req, res) => {
         emailResult = await sendCheckoutInvoiceEmail(invoiceForEmail);
       } else {
         console.warn(
-          `[email] Không tìm thấy invoice sau checkout, invoiceId=${invoice._id}`
+          `[email] Invoice not found after checkout, invoiceId=${invoice._id}`
         );
       }
     } catch (mailErr) {
-      console.error(`[email] Gửi checkout thất bại, invoiceId=${invoice._id}:`, mailErr.message);
+      console.error(`[email] Checkout email send failed, invoiceId=${invoice._id}:`, mailErr.message);
       emailResult = { sent: false, reason: 'email_send_failed', error: mailErr.message };
     }
 
     res.json({
-      message: 'Check-out thành công, đã tạo hóa đơn.',
+      message: 'Check-out successful; invoice created.',
       booking,
       invoice,
       email: emailResult,

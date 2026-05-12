@@ -9,7 +9,7 @@ const { protect, authorize } = require('../../middleware/authMiddleware');
 const { checkInRules, checkOutRules } = require('../../validators/checkinValidators');
 const { validate } = require('../../middleware/validationMiddleware');
 
-// Chỉ Lễ tân cho đúng endpoint check-in/check-out
+// Receptionist only
 router.post('/checkin', protect, authorize('receptionist'), checkInRules, validate, checkIn);
 router.post('/checkout', protect, authorize('receptionist'), checkOutRules, validate, checkOut);
 

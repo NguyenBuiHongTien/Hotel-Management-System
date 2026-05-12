@@ -5,9 +5,10 @@
   }
   
   body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f9fafb;
-    color: #1f2937;
+    font-family: var(--dash-font-ui, 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif);
+    background-color: var(--dash-black, #08080a);
+    color: var(--dash-text, #f4f1ea);
+    -webkit-font-smoothing: antialiased;
   }
   
   #root {
