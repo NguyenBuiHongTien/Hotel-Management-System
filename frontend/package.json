@@ -20,7 +20,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "eslint ."
   },
   "browserslist": {
     "production": [
@@ -35,7 +36,12 @@
     ]
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
     "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.5.0",
     "jsdom": "^29.1.1",
     "vite": "^8.0.10",
     "vitest": "^4.1.5"

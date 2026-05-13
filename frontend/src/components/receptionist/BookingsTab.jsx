@@ -52,7 +52,7 @@ const BookingsTab = () => {
       cancelled: 0
     };
     bookings.forEach(booking => {
-      if (booking.status && counts.hasOwnProperty(booking.status)) {
+      if (booking.status && Object.hasOwn(counts, booking.status)) {
         counts[booking.status]++;
       }
     });

@@ -46,7 +46,7 @@ export const authService = {
     } catch (error) {
       return {
         success: false,
-        message: error.message || 'Invalid email or password',
+        message: error.message || 'Sign-in failed',
       };
     }
   },

@@ -11,6 +11,7 @@ const {
     getRoomById,
     createRoom,
     updateRoomInfo,
+    deleteRoom,
     updateRoomStatus,
     searchAvailableRooms,
     getCleaningRooms,
@@ -37,5 +38,6 @@ router.put('/:roomId/status', protect, authorize('receptionist', 'housekeeper', 
 
 router.post('/', protect, authorize('manager'), createRoomRules, validate, createRoom);
 router.put('/:roomId', protect, authorize('manager'), updateRoomRules, validate, updateRoomInfo);
+router.delete('/:roomId', protect, authorize('manager'), deleteRoom);
 
 module.exports = router;

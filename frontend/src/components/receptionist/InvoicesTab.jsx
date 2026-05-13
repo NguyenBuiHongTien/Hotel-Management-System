@@ -62,7 +62,7 @@ const InvoicesTab = () => {
       const data = await invoiceService.getInvoiceById(invoiceId);
       setSelectedInvoice(data);
       setShowDetailModal(true);
-    } catch (err) {
+    } catch {
       alert('Could not load invoice details');
     }
   };

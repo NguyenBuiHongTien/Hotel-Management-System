@@ -151,7 +151,9 @@ const Login = ({ onLogin }) => {
               </button>
             </form>
 
-            <p className={styles.hint}>Authorized staff only. After seeding users, default password is <code>HotelDemo1</code>.</p>
+            <p className={styles.hint}>
+              Authorized staff only. After running <code>npm run seed:users</code>, use the demo accounts listed in the project <strong>README</strong> (password is not shown here for public repos).
+            </p>
           </div>
         </main>
       </div>

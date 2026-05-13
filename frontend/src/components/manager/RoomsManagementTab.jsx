@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { roomService } from '../../services/roomService';
 import { roomTypeService } from '../../services/roomTypeService';
 import { asArray } from '../../utils/apiNormalize';
@@ -14,18 +14,39 @@ const RoomsManagementTab = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingRoomId, setEditingRoomId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [floorFilter, setFloorFilter] = useState('all');
+  const [floorOptions, setFloorOptions] = useState([]);
   const [formData, setFormData] = useState({
     roomNumber: '',
     roomTypeId: '',
     floor: '',
-    status: 'available'
   });
+  const [roomTypesLoadError, setRoomTypesLoadError] = useState(null);
+
+  const validRoomTypes = useMemo(
+    () => roomTypes.filter((rt) => rt && rt._id),
+    [roomTypes]
+  );
+
+  const refreshFloorOptions = useCallback(async () => {
+    try {
+      const data = await roomService.getAllRooms({});
+      const list = asArray(data, 'rooms');
+      const floors = [
+        ...new Set(list.map((r) => String(r.floor ?? '').trim()).filter(Boolean)),
+      ].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+      setFloorOptions(floors);
+    } catch {
+      /* keep previous options */
+    }
+  }, []);
 
   const loadRooms = useCallback(async () => {
     try {
       setLoading(true);
       const filters = {};
       if (statusFilter !== 'all') filters.status = statusFilter;
+      if (floorFilter !== 'all') filters.floor = floorFilter;
       const data = await roomService.getAllRooms(filters);
       setRooms(asArray(data, 'rooms'));
     } catch (err) {
@@ -34,22 +55,34 @@ const RoomsManagementTab = () => {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, floorFilter]);
 
   const loadRoomTypes = useCallback(async () => {
     try {
+      setRoomTypesLoadError(null);
       const data = await roomTypeService.getAllRoomTypes();
       setRoomTypes(asArray(data, 'roomTypes'));
     } catch (err) {
       console.error('Error loading room types:', err);
+      setRoomTypes([]);
+      setRoomTypesLoadError(err.message || 'Could not load room types');
     }
   }, []);
+
+  useEffect(() => {
+    void refreshFloorOptions();
+  }, [refreshFloorOptions]);
+
+  useEffect(() => {
+    if (floorFilter !== 'all' && !floorOptions.includes(floorFilter)) {
+      setFloorFilter('all');
+    }
+  }, [floorOptions, floorFilter]);
 
   useEffect(() => {
     loadRooms();
     loadRoomTypes();
 
-    // Auto-refresh every 30s to stay in sync
     const interval = setInterval(() => {
       loadRooms();
     }, 30000);
@@ -59,21 +92,43 @@ const RoomsManagementTab = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const roomNumber = formData.roomNumber.trim();
+    const roomTypeId = String(formData.roomTypeId).trim();
+    const floor = formData.floor.trim();
+
+    if (!editingRoomId && validRoomTypes.length === 0) {
+      alert('Add at least one room type (Room types tab) before creating a room.');
+      return;
+    }
+    if (!roomTypeId) {
+      alert('Please select a room type.');
+      return;
+    }
+    if (!roomNumber || !floor) {
+      alert('Room number and floor are required.');
+      return;
+    }
+
     try {
       if (editingRoomId) {
         await roomService.updateRoomInfo(editingRoomId, {
-          roomNumber: formData.roomNumber,
-          roomTypeId: formData.roomTypeId,
-          floor: formData.floor
+          roomNumber,
+          roomTypeId,
+          floor,
         });
         alert('Room updated!');
       } else {
-        await roomService.createRoom(formData);
-        alert('Room created!');
+        await roomService.createRoom({
+          roomNumber,
+          roomTypeId,
+          floor,
+        });
+        alert('Room created (vacant).');
       }
       setShowModal(false);
-      setFormData({ roomNumber: '', roomTypeId: '', floor: '', status: 'available' });
+      setFormData({ roomNumber: '', roomTypeId: '', floor: '' });
       setEditingRoomId(null);
+      await refreshFloorOptions();
       loadRooms();
     } catch (err) {
       alert('Error: ' + (err.message || 'Could not save room'));
@@ -82,22 +137,38 @@ const RoomsManagementTab = () => {
 
   const handleEdit = (room) => {
     setEditingRoomId(room._id);
+    const roomTypeId = String(room.roomType?._id ?? room.roomType ?? '').trim();
     setFormData({
       roomNumber: room.roomNumber || '',
-      roomTypeId: room.roomType?._id || room.roomType || '',
-      floor: room.floor || '',
-      status: room.status || 'available'
+      roomTypeId,
+      floor: room.floor != null ? String(room.floor) : '',
     });
     setShowModal(true);
+    void loadRoomTypes();
+  };
+
+  const handleDelete = async (room) => {
+    const label = room.roomNumber || 'this room';
+    if (!window.confirm(`Delete room ${label}? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      await roomService.deleteRoom(room._id);
+      alert('Room deleted.');
+      await refreshFloorOptions();
+      loadRooms();
+    } catch (err) {
+      alert('Error: ' + (err.message || 'Could not delete room'));
+    }
   };
 
   const getStatusLabel = (status) => {
     const labels = {
-      'available': 'Available',
-      'occupied': 'Occupied',
-      'dirty': 'Needs cleaning',
-      'cleaning': 'Cleaning',
-      'maintenance': 'Maintenance'
+      available: 'Vacant',
+      occupied: 'Occupied',
+      dirty: 'Needs cleaning',
+      cleaning: 'Cleaning',
+      maintenance: 'Maintenance',
     };
     return labels[status] || status;
   };
@@ -107,11 +178,13 @@ const RoomsManagementTab = () => {
       <div className={styles.flexBetween}>
         <h2 className={styles.sectionTitle}>Rooms</h2>
         <button
+          type="button"
           className={`${buttonStyles.primary} ${buttonStyles.md}`}
           onClick={() => {
             setEditingRoomId(null);
-            setFormData({ roomNumber: '', roomTypeId: '', floor: '', status: 'available' });
+            setFormData({ roomNumber: '', roomTypeId: '', floor: '' });
             setShowModal(true);
+            void loadRoomTypes();
           }}
         >
           <Plus size={18} aria-hidden />
@@ -119,21 +192,43 @@ const RoomsManagementTab = () => {
         </button>
       </div>
 
-      <div className={styles.mbLg}>
-        <label className={styles.formLabel} htmlFor="room-status-filter">Filter by status</label>
-        <select
-          id="room-status-filter"
-          className={`${styles.formInputDark} ${styles.selectNarrow}`}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="all">All statuses</option>
-          <option value="available">Vacant</option>
-          <option value="occupied">Occupied</option>
-          <option value="dirty">Needs cleaning</option>
-          <option value="cleaning">Cleaning</option>
-          <option value="maintenance">Maintenance</option>
-        </select>
+      <div className={`${styles.formRowInline} ${styles.mbLg}`}>
+        <div className={styles.inputGrow}>
+          <label className={styles.formLabel} htmlFor="room-status-filter">
+            Filter by status
+          </label>
+          <select
+            id="room-status-filter"
+            className={styles.formInputDark}
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="all">All statuses</option>
+            <option value="available">Vacant</option>
+            <option value="occupied">Occupied</option>
+            <option value="dirty">Needs cleaning</option>
+            <option value="cleaning">Cleaning</option>
+            <option value="maintenance">Maintenance</option>
+          </select>
+        </div>
+        <div className={styles.inputGrow}>
+          <label className={styles.formLabel} htmlFor="room-floor-filter">
+            Filter by floor
+          </label>
+          <select
+            id="room-floor-filter"
+            className={styles.formInputDark}
+            value={floorFilter}
+            onChange={(e) => setFloorFilter(e.target.value)}
+          >
+            <option value="all">All floors</option>
+            {floorOptions.map((f) => (
+              <option key={f} value={f}>
+                {f}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className={tableStyles.tableContainer}>
@@ -149,24 +244,43 @@ const RoomsManagementTab = () => {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td className={tableStyles.td} colSpan={5}>Loading...</td></tr>
+              <tr>
+                <td className={tableStyles.td} colSpan={5}>
+                  Loading...
+                </td>
+              </tr>
             ) : rooms.length === 0 ? (
-              <tr><td className={tableStyles.td} colSpan={5}>No rooms</td></tr>
+              <tr>
+                <td className={tableStyles.td} colSpan={5}>
+                  No rooms
+                </td>
+              </tr>
             ) : (
-              rooms.map(room => (
+              rooms.map((room) => (
                 <tr key={room._id}>
                   <td className={tableStyles.td}>{room.roomNumber}</td>
                   <td className={tableStyles.td}>{room.floor}</td>
                   <td className={tableStyles.td}>{room.roomType?.typeName || 'N/A'}</td>
                   <td className={tableStyles.td}>{getStatusLabel(room.status)}</td>
                   <td className={tableStyles.td}>
-                    <button
-                      className={tableStyles.actionBtn}
-                      onClick={() => handleEdit(room)}
-                      title="Edit"
-                    >
-                      <Edit size={16} />
-                    </button>
+                    <div className={styles.rowActions}>
+                      <button
+                        type="button"
+                        className={tableStyles.actionBtn}
+                        onClick={() => handleEdit(room)}
+                        title="Edit"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        className={`${tableStyles.actionBtn} ${styles.actionBtnDanger}`}
+                        onClick={() => handleDelete(room)}
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -179,6 +293,11 @@ const RoomsManagementTab = () => {
         <div className={styles.modalOverlay} onClick={() => setShowModal(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h2 className={styles.modalFormTitle}>{editingRoomId ? 'Edit room' : 'New room'}</h2>
+            {!editingRoomId && (
+              <p className={styles.modalStateText}>
+                New rooms are created as <strong>vacant</strong> (available for booking).
+              </p>
+            )}
             <form onSubmit={handleSubmit}>
               <div className={styles.modalFormStack}>
                 <div>
@@ -202,12 +321,26 @@ const RoomsManagementTab = () => {
                     required
                     value={formData.roomTypeId}
                     onChange={(e) => setFormData({ ...formData, roomTypeId: e.target.value })}
+                    disabled={!editingRoomId && validRoomTypes.length === 0}
                   >
                     <option value="">Select room type</option>
-                    {roomTypes.map(rt => (
-                      <option key={rt._id} value={rt._id}>{rt.typeName}</option>
+                    {validRoomTypes.map((rt) => (
+                      <option key={String(rt._id)} value={String(rt._id)}>
+                        {rt.typeName || 'Unnamed type'}
+                      </option>
                     ))}
                   </select>
+                  {roomTypesLoadError && (
+                    <p className={styles.modalErrorText} role="alert">
+                      {roomTypesLoadError}
+                    </p>
+                  )}
+                  {!roomTypesLoadError && !editingRoomId && validRoomTypes.length === 0 && (
+                    <p className={styles.modalStateText}>
+                      No room types yet. Create them in the <strong>Room types</strong> tab, then open
+                      Add room again.
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className={styles.formLabel}>
@@ -221,22 +354,6 @@ const RoomsManagementTab = () => {
                     onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
                   />
                 </div>
-                {!editingRoomId && (
-                  <div>
-                    <label className={styles.formLabel}>
-                      Initial status
-                    </label>
-                    <select
-                      className={styles.formInputDark}
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    >
-                      <option value="available">Vacant</option>
-                      <option value="dirty">Needs cleaning</option>
-                      <option value="maintenance">Maintenance</option>
-                    </select>
-                  </div>
-                )}
               </div>
               <div className={styles.modalFooterBar}>
                 <button
@@ -245,7 +362,7 @@ const RoomsManagementTab = () => {
                   onClick={() => {
                     setShowModal(false);
                     setEditingRoomId(null);
-                    setFormData({ roomNumber: '', roomTypeId: '', floor: '', status: 'available' });
+                    setFormData({ roomNumber: '', roomTypeId: '', floor: '' });
                   }}
                 >
                   Cancel
@@ -253,6 +370,7 @@ const RoomsManagementTab = () => {
                 <button
                   type="submit"
                   className={`${buttonStyles.primary} ${buttonStyles.md}`}
+                  disabled={!editingRoomId && validRoomTypes.length === 0}
                 >
                   {editingRoomId ? 'Update' : 'Create'}
                 </button>

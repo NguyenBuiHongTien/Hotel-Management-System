@@ -87,7 +87,7 @@ const ReportsTab = () => {
       const data = await reportService.getReportById(reportId);
       setSelectedReport(data);
       setShowDetailModal(true);
-    } catch (err) {
+    } catch {
       alert('Could not load report details');
     }
   };

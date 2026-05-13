@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { normalizeRole } from '../services/authService';
 
 /**
@@ -8,6 +8,8 @@ import { normalizeRole } from '../services/authService';
  * @param {object} [user] - current user from App state (preferred over localStorage)
  */
 const ProtectedRoute = ({ children, isAuthenticated, allowedRoles = [], user: userFromParent }) => {
+  const location = useLocation();
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
@@ -16,7 +18,7 @@ const ProtectedRoute = ({ children, isAuthenticated, allowedRoles = [], user: us
   if (!user?.role) {
     try {
       user = JSON.parse(localStorage.getItem('user') || '{}');
-    } catch (e) {
+    } catch {
       localStorage.removeItem('user');
       localStorage.removeItem('token');
       return <Navigate to="/login" replace />;
@@ -26,7 +28,13 @@ const ProtectedRoute = ({ children, isAuthenticated, allowedRoles = [], user: us
   const normalizedRole = normalizeRole(user?.role);
   const allowed = allowedRoles.map((r) => normalizeRole(r));
   if (allowedRoles.length > 0 && !allowed.includes(normalizedRole)) {
-    return <Navigate to="/login" replace />;
+    return (
+      <Navigate
+        to="/forbidden"
+        replace
+        state={{ from: location.pathname }}
+      />
+    );
   }
 
   return children;

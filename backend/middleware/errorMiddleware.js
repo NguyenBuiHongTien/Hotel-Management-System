@@ -1,4 +1,3 @@
-
 const notFound = (req, res, next) => {
   const error = new Error(`Not Found - ${req.originalUrl}`);
   res.status(404);
@@ -24,8 +23,8 @@ const errorHandler = (err, req, res, next) => {
     // Mongoose Duplicate Key Error
     if (err.code === 11000) {
       statusCode = 400;
-      const field = Object.keys(err.keyPattern)[0];
-      message = `${field} already exists`;
+      const field = Object.keys(err.keyPattern || {})[0] || 'field';
+      message = `Duplicate value: ${field} already exists`;
     }
 
     // JWT Errors
@@ -50,7 +49,6 @@ const errorHandler = (err, req, res, next) => {
     }
 
     res.status(statusCode).json(payload);
-
-  };
+};
 
 module.exports = { notFound, errorHandler };

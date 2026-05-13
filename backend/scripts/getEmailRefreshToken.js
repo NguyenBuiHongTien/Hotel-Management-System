@@ -102,7 +102,9 @@ function main() {
       try {
         res.writeHead(500);
         res.end(String(e.message));
-      } catch (_) {}
+      } catch {
+        // ignore secondary errors while responding
+      }
       server.close();
       process.exit(1);
     }

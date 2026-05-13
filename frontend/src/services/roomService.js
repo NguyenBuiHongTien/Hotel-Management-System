@@ -96,11 +96,10 @@ export const roomService = {
     }
   },
 
-  updateRoomInfo: async (id, roomData) => {
+  deleteRoom: async (id) => {
     try {
       const data = await apiCall(`/rooms/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(roomData),
+        method: 'DELETE',
       });
       return { success: true, data };
     } catch (error) {

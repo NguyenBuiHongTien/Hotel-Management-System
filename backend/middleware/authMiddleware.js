@@ -62,7 +62,9 @@ const authorize = (...roles) => {
     return (req, res, next) => {
         if (!req.user) {
             res.status(403);
-            throw new Error('User not authenticated');
+            const err = new Error('User not authenticated');
+            err.status = 403;
+            return next(err);
         }
 
         const userRole = normalizeRole(req.user.role);
@@ -70,7 +72,9 @@ const authorize = (...roles) => {
 
         if (!allowedRoles.includes(userRole)) {
             res.status(403);
-            throw new Error('You do not have permission to access this resource');
+            const err = new Error('You do not have permission to access this resource');
+            err.status = 403;
+            return next(err);
         }
 
         next();

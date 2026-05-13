@@ -45,7 +45,7 @@ const ManagerDashboard = ({ onLogout }) => {
       try {
         const raw = await apiCall('/employees');
         setEmployees(asArray(raw, 'employees'));
-      } catch (e2) {
+      } catch {
         setDataError('Could not load employees');
         setEmployees([]);
       }
@@ -133,13 +133,13 @@ const ManagerDashboard = ({ onLogout }) => {
       if (editingEmployeeId) {
         try {
           await employeeService.updateEmployee(editingEmployeeId, payload);
-        } catch (e) {
+        } catch {
           await apiCall(`/employees/${editingEmployeeId}`, { method: 'PUT', body: JSON.stringify(payload) });
         }
       } else {
         try {
           await employeeService.createEmployee(payload);
-        } catch (e) {
+        } catch {
           await apiCall('/employees', { method: 'POST', body: JSON.stringify(payload) });
         }
       }
@@ -163,7 +163,7 @@ const ManagerDashboard = ({ onLogout }) => {
     try {
       try {
         await employeeService.deleteEmployee(id);
-      } catch (e) {
+      } catch {
         await apiCall(`/employees/${id}`, { method: 'DELETE' });
       }
       await loadEmployees();

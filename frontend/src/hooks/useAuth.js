@@ -1,57 +1,73 @@
-import { useState, useEffect } from 'react';
-import { authService } from '../services/authService';
+import { useState, useEffect, useCallback } from 'react';
+import { authService, normalizeRole } from '../services/authService';
 
-export const useAuth = () => {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+/**
+ * Single source of truth for staff session: hydrate from token, login, logout, 401 listener.
+ */
+export function useAuth() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    // Check if user is logged in (from localStorage)
-    const storedUser = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
-    
-    if (storedUser && token) {
-      try {
-        const userData = JSON.parse(storedUser);
-        setUser(userData);
-        // Optionally verify token with backend
-        authService.getProfile().then((result) => {
-          if (result.success) {
-            setUser(result.user);
-            localStorage.setItem('user', JSON.stringify(result.user));
-          } else {
-            // Token invalid, clear storage
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-            setUser(null);
-          }
-        }).catch(() => {
-          localStorage.removeItem('user');
-          localStorage.removeItem('token');
-          setUser(null);
-        });
-      } catch (error) {
+    let cancelled = false;
+
+    const hydrateSession = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
         localStorage.removeItem('user');
-        localStorage.removeItem('token');
-        setUser(null);
+        if (!cancelled) {
+          setCurrentUser(null);
+          setAuthChecked(true);
+        }
+        return;
       }
-    }
-    setIsLoading(false);
+
+      const result = await authService.getProfile();
+      if (cancelled) return;
+
+      if (result.success && result.user?.role) {
+        const u = { ...result.user, role: normalizeRole(result.user.role) };
+        localStorage.setItem('user', JSON.stringify(u));
+        setCurrentUser(u);
+      } else {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setCurrentUser(null);
+      }
+      setAuthChecked(true);
+    };
+
+    hydrateSession();
+
+    const onUnauthorized = () => {
+      setCurrentUser(null);
+      setAuthChecked(true);
+    };
+    window.addEventListener('auth:unauthorized', onUnauthorized);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('auth:unauthorized', onUnauthorized);
+    };
   }, []);
 
-  const login = async (email, password) => {
-    const result = await authService.login(email, password);
-    if (result.success) {
-      setUser(result.user);
-      return result;
+  const handleLogin = useCallback((user) => {
+    setCurrentUser({ ...user, role: normalizeRole(user?.role) });
+    setAuthChecked(true);
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await authService.logout();
+    } finally {
+      setCurrentUser(null);
     }
-    return result;
-  };
+  }, []);
 
-  const logout = async () => {
-    await authService.logout();
-    setUser(null);
+  return {
+    currentUser,
+    authChecked,
+    handleLogin,
+    handleLogout,
   };
-
-  return { user, isLoading, login, logout };
-};
+}

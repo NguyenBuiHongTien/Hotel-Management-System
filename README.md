@@ -25,6 +25,12 @@ The system includes:
 
 Supported roles: `manager`, `receptionist`, `accountant`, `housekeeper`, `maintenance`.
 
+### SOA in this coursework project
+
+In many university SOA courses, **“service-oriented”** does not strictly mean many deployable microservices. This repository is a **modular monolith**: one Node/Express API with **clear route groups** (auth, bookings, rooms, invoices, …) and a **separate SPA client** — each group behaves like an internal **service boundary** you could later extract (e.g. billing service, inventory service) if you add async messaging and independent deployment. The README and `Postman_Collection.json` describe the public **contract** of those boundaries today.
+
+**User-facing API messages** (validation, auth, rate limits, common errors) are returned in **English** for consistency with the codebase and OpenAPI docs. UI copy follows the same default; localize if your course requires another language.
+
 ---
 
 ## Main features
@@ -59,7 +65,7 @@ Supported roles: `manager`, `receptionist`, `accountant`, `housekeeper`, `mainte
 
 ### DevOps
 - Docker, Docker Compose
-- GitHub Actions (CI: backend tests, frontend tests + build — see `.github/workflows/ci.yml`)
+- GitHub Actions (CI: **lint** + backend tests + frontend tests + build — see `.github/workflows/ci.yml`)
 
 ---
 
@@ -67,8 +73,14 @@ Supported roles: `manager`, `receptionist`, `accountant`, `housekeeper`, `mainte
 
 ```text
 CK_SOA/
+├─ LICENSE
 ├─ backend/
+│  ├─ app.js                 # Express app factory (used by server + tests)
+│  ├─ server.js              # listen + DB connect + scheduler
 │  ├─ config/
+│  │  ├─ openapi.json        # OpenAPI spec for Swagger UI
+│  │  └─ ...
+│  ├─ eslint.config.mjs
 │  ├─ controllers/
 │  ├─ middleware/
 │  ├─ models/
@@ -76,12 +88,18 @@ CK_SOA/
 │  ├─ scripts/seeders/
 │  ├─ services/
 │  ├─ tests/
-│  └─ server.js
+│  └─ ...
+├─ docs/
+│  ├─ screenshots/           # optional demo images (see docs/screenshots/README.md)
+│  └─ ...
 ├─ frontend/
+│  ├─ .env.example
+│  ├─ eslint.config.js
 │  ├─ src/components/
-│  ├─ src/pages/
+│  ├─ src/pages/             # Login, Forbidden, NotFound, role dashboards
 │  ├─ src/services/
 │  ├─ src/hooks/
+│  ├─ src/utils/             # e.g. escapeHtml for safe print/download HTML
 │  ├─ src/config/api.js
 │  ├─ vite.config.js
 │  └─ Dockerfile
@@ -121,6 +139,8 @@ GMAIL_SENDER_EMAIL=
 > `JWT_SECRET` should be at least 16 characters.
 
 ### 2) Frontend `frontend/.env` (optional)
+
+Copy `frontend/.env.example` to `frontend/.env` if you need to change the API base URL:
 
 ```env
 VITE_API_URL=http://localhost:5000/api
@@ -241,6 +261,20 @@ Most endpoints require `Authorization: Bearer <token>`; `POST /auth/login` is pu
 
 Import `Postman_Collection.json` for quick API testing.
 
+### Interactive API docs (Swagger UI)
+
+When the backend is **not** in `NODE_ENV=production`, OpenAPI documentation is served at:
+
+- **`http://localhost:5000/api/docs`**
+
+To enable `/api/docs` in production as well (e.g. private demo), set `ENABLE_SWAGGER=true` in the environment. The spec file lives at `backend/config/openapi.json` (extend it as you add routes).
+
+---
+
+## Screenshots (optional)
+
+Add dashboard screenshots under `docs/screenshots/` and link them from this README. See `docs/screenshots/README.md` for suggested file names.
+
 ---
 
 ## Useful scripts
@@ -248,6 +282,7 @@ Import `Postman_Collection.json` for quick API testing.
 ### Backend
 - `npm start`: run server
 - `npm test`: Jest tests
+- `npm run lint`: ESLint
 - `npm run seed:all`: run all seeds
 - `npm run gmail:token`: obtain Gmail refresh token
 - `npm run check-role`: inspect user role
@@ -257,14 +292,36 @@ Import `Postman_Collection.json` for quick API testing.
 - `npm run dev`: Vite dev server
 - `npm run build`: production build
 - `npm test`: Vitest
+- `npm run lint`: ESLint
 
 ---
 
 ## Roadmap
 
-- [ ] Full API docs (Swagger/OpenAPI — dependency exists in `package.json` but UI not wired in `server.js`).
+- [x] OpenAPI / Swagger UI (`/api/docs`, `backend/config/openapi.json`).
+- [x] ESLint on backend and frontend; lint in CI.
+- [x] Additional API smoke tests (auth validation, protected route 401, `authorize` middleware).
+- [x] XSS-safe invoice HTML export + `/forbidden` page for wrong dashboard role.
 - [ ] More backend integration tests and frontend UI tests.
 - [ ] Clearer service layer per bounded context.
-- [x] Basic CI: GitHub Actions runs backend tests + frontend tests and build (see `.github/workflows/ci.yml`).
-- [ ] Expand CI/CD: lint, artifacts, automated deploy.
+- [x] Basic CI: GitHub Actions runs lint, backend tests, frontend tests and build.
+- [ ] Expand CI/CD: artifacts, automated deploy.
 - [ ] Finer-grained action-level authorization.
+
+---
+
+## Known limitations (fresher / portfolio scope)
+
+These are **accepted trade-offs** for a learning project; document them in interviews.
+
+- **JWT in `localStorage`**: convenient for SPAs but vulnerable if XSS ever exists in the app — mitigations include `httpOnly` cookies + CSRF strategy (not implemented here).
+- **Logout**: clears the client session; the JWT is **not revoked server-side** (stateless JWT).
+- **Role guard**: the UI redirects wrong-role users to **`/forbidden`**; the API still returns **403** — always enforce rules on the server (already done).
+- **Invoice print/download**: guest and room fields are **HTML-escaped** before `document.write` / file download to reduce XSS risk from stored data.
+- **API response `message` fields** (errors, rate limits, auth): **English**; keep new endpoints aligned so clients and tests stay predictable.
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).

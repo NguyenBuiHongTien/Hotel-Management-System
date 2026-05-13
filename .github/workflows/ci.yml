@@ -25,7 +25,14 @@ jobs:
       - name: Install backend dependencies
         run: npm ci
 
+      - name: Lint backend
+        run: npm run lint
+
       - name: Run backend tests
+        env:
+          JWT_SECRET: ci-jwt-secret-at-least-16
+          FRONTEND_URL: http://localhost:5173
+          NODE_ENV: test
         run: npm test -- --passWithNoTests
 
   frontend:
@@ -46,6 +53,9 @@ jobs:
 
       - name: Install frontend dependencies
         run: npm ci
+
+      - name: Lint frontend
+        run: npm run lint
 
       - name: Run frontend tests
         run: npm test

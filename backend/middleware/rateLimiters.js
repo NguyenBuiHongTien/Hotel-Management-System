@@ -1,7 +1,7 @@
 const rateLimit = require('express-rate-limit');
 
-const isDevelopment = process.env.NODE_ENV === 'development';
-const multiplier = isDevelopment ? 4 : 1;
+const isDevLike = ['development', 'test'].includes(process.env.NODE_ENV);
+const multiplier = isDevLike ? 4 : 1;
 const withEnvScale = (value) => Math.round(value * multiplier);
 
 // Login rate limiter (brute-force protection)

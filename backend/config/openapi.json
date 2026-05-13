@@ -1,0 +1,83 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Hotel Management API",
+    "version": "1.0.0",
+    "description": "REST API for the hotel management system. Most routes require `Authorization: Bearer <JWT>`. Import `Postman_Collection.json` for a fuller workflow."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Local backend"
+    }
+  ],
+  "tags": [
+    { "name": "Health", "description": "Liveness" },
+    { "name": "Auth", "description": "Authentication" }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "Service is up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean", "example": true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email", "example": "receptionist@hotel.com" },
+                  "password": { "type": "string", "format": "password", "example": "HotelDemo1" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JWT and user profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_id": { "type": "string" },
+                    "name": { "type": "string" },
+                    "email": { "type": "string" },
+                    "role": { "type": "string" },
+                    "token": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Download, Printer, FileText, User, Bed, DollarSign } from 'lucide-react';
 import invoiceService from '../../services/invoiceService';
+import { escapeHtml } from '../../utils/escapeHtml';
 import styles from '../../styles/Dashboard.module.css';
 import buttonStyles from '../../styles/Button.module.css';
 import badgeStyles from '../../styles/Badge.module.css';
@@ -55,7 +56,8 @@ const InvoiceDetailModal = ({ invoiceId, onClose }) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Invoice_${invoice?.invoiceId || invoice?._id?.slice(-6) || 'INV'}.html`;
+    const rawName = String(invoice?.invoiceId || invoice?._id?.slice(-6) || 'INV').replace(/[^a-zA-Z0-9-_]/g, '_');
+    link.download = `Invoice_${rawName}.html`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -77,12 +79,27 @@ const InvoiceDetailModal = ({ invoiceId, onClose }) => {
     const gold = '#b8860b';
     const goldDark = '#8b6914';
 
+    const invLabel = escapeHtml(String(invoice.invoiceId || invoice._id?.slice(-6) || ''));
+    const guestName = escapeHtml(guest.fullName || 'N/A');
+    const guestPhone = guest.phoneNumber ? escapeHtml(String(guest.phoneNumber)) : '';
+    const guestEmail = guest.email ? escapeHtml(String(guest.email)) : '';
+    const roomNo = escapeHtml(String(room.roomNumber || 'N/A'));
+    const typeName = escapeHtml(String(roomType.typeName || 'N/A'));
+    const issueDateStr = invoice.issueDate
+      ? escapeHtml(new Date(invoice.issueDate).toLocaleDateString('en-US'))
+      : 'N/A';
+    const checkInStr = checkInDate ? escapeHtml(checkInDate.toLocaleDateString('en-US')) : 'N/A';
+    const checkOutStr = checkOutDate ? escapeHtml(checkOutDate.toLocaleDateString('en-US')) : 'N/A';
+    const methodLabel = invoice.paymentMethod
+      ? escapeHtml(paymentMethodLabel(invoice.paymentMethod))
+      : '';
+
     return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Invoice ${invoice.invoiceId || invoice._id?.slice(-6)}</title>
+  <title>Invoice ${invLabel}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -236,11 +253,11 @@ const InvoiceDetailModal = ({ invoiceId, onClose }) => {
         <h3>Invoice details</h3>
         <div class="info-row">
           <span class="info-label">Invoice #:</span>
-          <strong>${invoice.invoiceId || invoice._id?.slice(-6)}</strong>
+          <strong>${invLabel}</strong>
         </div>
         <div class="info-row">
           <span class="info-label">Issue date:</span>
-          ${invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString('en-US') : 'N/A'}
+          ${issueDateStr}
         </div>
         <div class="info-row">
           <span class="info-label">Status:</span>
@@ -251,7 +268,7 @@ const InvoiceDetailModal = ({ invoiceId, onClose }) => {
         ${invoice.paymentMethod ? `
         <div class="info-row">
           <span class="info-label">Method:</span>
-          ${paymentMethodLabel(invoice.paymentMethod)}
+          ${methodLabel}
         </div>
         ` : ''}
       </div>
@@ -260,18 +277,18 @@ const InvoiceDetailModal = ({ invoiceId, onClose }) => {
         <h3>Guest details</h3>
         <div class="info-row">
           <span class="info-label">Name:</span>
-          ${guest.fullName || 'N/A'}
+          ${guestName}
         </div>
         ${guest.phoneNumber ? `
         <div class="info-row">
           <span class="info-label">Phone:</span>
-          ${guest.phoneNumber}
+          ${guestPhone}
         </div>
         ` : ''}
         ${guest.email ? `
         <div class="info-row">
           <span class="info-label">Email:</span>
-          ${guest.email}
+          ${guestEmail}
         </div>
         ` : ''}
       </div>
@@ -289,11 +306,11 @@ const InvoiceDetailModal = ({ invoiceId, onClose }) => {
       <tbody>
         <tr>
           <td>
-            <strong>Room ${room.roomNumber || 'N/A'}</strong><br>
+            <strong>Room ${roomNo}</strong><br>
             <small style="color: #666;">
-              ${roomType.typeName || 'N/A'} |
-              Check-in: ${checkInDate ? checkInDate.toLocaleDateString('en-US') : 'N/A'} |
-              Check-out: ${checkOutDate ? checkOutDate.toLocaleDateString('en-US') : 'N/A'}
+              ${typeName} |
+              Check-in: ${checkInStr} |
+              Check-out: ${checkOutStr}
             </small>
           </td>
           <td style="text-align: center;">${nights}</td>

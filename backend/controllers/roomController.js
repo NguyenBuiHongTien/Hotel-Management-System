@@ -2,6 +2,7 @@ const asyncHandler = require('express-async-handler');
 const Room = require('../models/roomModel');
 const RoomType = require('../models/roomTypeModel');
 const Booking = require('../models/bookingModel');
+const Maintenance = require('../models/maintenanceModel');
 const { buildBookingOverlapFilter } = require('../utils/bookingOverlap');
 
 /**
@@ -44,7 +45,9 @@ const getRoomById = asyncHandler(async (req, res) => {
  * @access  Private/Manager
  */
 const createRoom = asyncHandler(async (req, res) => {
-  const { roomNumber, roomTypeId, floor, status } = req.body;
+  const roomNumber = String(req.body.roomNumber ?? '').trim();
+  const roomTypeId = String(req.body.roomTypeId ?? '').trim();
+  const floor = String(req.body.floor ?? '').trim();
 
   if (await Room.findOne({ roomNumber })) {
     res.status(400);
@@ -59,7 +62,7 @@ const createRoom = asyncHandler(async (req, res) => {
     roomNumber,
     roomType: roomTypeId,
     floor,
-    status: status || 'available'
+    status: 'available',
   });
   const populated = await room.populate('roomType');
   res.status(201).json(populated);
@@ -71,21 +74,25 @@ const createRoom = asyncHandler(async (req, res) => {
  * @access  Private/Manager
  */
 const updateRoomInfo = asyncHandler(async (req, res) => {
-  const { roomNumber, roomTypeId, floor } = req.body;
+  const roomNumber =
+    req.body.roomNumber !== undefined ? String(req.body.roomNumber).trim() : undefined;
+  const roomTypeId =
+    req.body.roomTypeId !== undefined ? String(req.body.roomTypeId).trim() : undefined;
+  const floor = req.body.floor !== undefined ? String(req.body.floor).trim() : undefined;
   const room = await Room.findById(req.params.roomId);
   if (!room) {
     res.status(404);
     throw new Error('Room not found');
   }
 
-  if (roomNumber && roomNumber !== room.roomNumber) {
+  if (roomNumber !== undefined && roomNumber !== room.roomNumber) {
     if (await Room.findOne({ roomNumber })) {
       res.status(400);
       throw new Error('Room number already exists');
     }
     room.roomNumber = roomNumber;
   }
-  if (roomTypeId) {
+  if (roomTypeId !== undefined && roomTypeId !== '') {
     if (!(await RoomType.findById(roomTypeId))) {
       res.status(400);
       throw new Error('Invalid room type ID');
@@ -97,6 +104,34 @@ const updateRoomInfo = asyncHandler(async (req, res) => {
   const updated = await room.save();
   const populated = await updated.populate('roomType');
   res.json(populated);
+});
+
+/**
+ * @desc    Delete room (manager)
+ * @route   DELETE /api/rooms/:roomId
+ * @access  Private/Manager
+ */
+const deleteRoom = asyncHandler(async (req, res) => {
+  const room = await Room.findById(req.params.roomId);
+  if (!room) {
+    res.status(404);
+    throw new Error('Room not found');
+  }
+
+  const bookingExists = await Booking.findOne({ room: room._id });
+  if (bookingExists) {
+    res.status(400);
+    throw new Error('Cannot delete a room that has bookings in the system');
+  }
+
+  const maintenanceExists = await Maintenance.findOne({ room: room._id });
+  if (maintenanceExists) {
+    res.status(400);
+    throw new Error('Cannot delete a room that has maintenance requests');
+  }
+
+  await Room.deleteOne({ _id: room._id });
+  res.json({ message: 'Room deleted successfully' });
 });
 
 /**
@@ -218,6 +253,7 @@ module.exports = {
   getRoomById,
   createRoom,
   updateRoomInfo,
+  deleteRoom,
   updateRoomStatus,
   searchAvailableRooms,
   getCleaningRooms,
